@@ -5,6 +5,7 @@ import { buildScene } from "./core/scene.js";
 import { mountScene } from "./render/render-svg.js";
 import { createStore } from "./store/state.js";
 import { renderPanels } from "./ui/panels.js";
+import { renderLayers } from "./ui/layers.js";
 
 const store = createStore(defaultPreset());
 const view = { mode: "page" };
@@ -80,6 +81,11 @@ function main() {
   renderPreviewToolbar();
   renderHint();
   renderPanels(el("panels"), { store, onChange: () => renderPreview() });
+  renderLayers(el("panels"), {
+    store,
+    getLayout: () => layoutSheet(store.getPreset().page.size, store.getPreset().page.orientation),
+    onChanged: () => renderPreview(),
+  });
   renderPreview();
 }
 

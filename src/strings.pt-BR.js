@@ -72,6 +72,25 @@ export const strings = {
     statusLoading: "Montando a pré-visualização…",
     statusReady: "Pré-visualização pronta",
   },
+  layers: {
+    empty: "Nenhum objeto na folha ainda.",
+    promptRename: "Nome da camada",
+    types: {
+      image: "Imagem",
+      text: "Texto",
+    },
+    actions: {
+      up: "Subir",
+      down: "Descer",
+      hide: "Ocultar",
+      show: "Mostrar",
+      lock: "Bloquear",
+      unlock: "Desbloquear",
+      duplicate: "Duplicar",
+      remove: "Excluir",
+      rename: "Renomear",
+    },
+  },
   picker: {
     title: "Escolher cor",
     saturation: "Saturação e brilho",

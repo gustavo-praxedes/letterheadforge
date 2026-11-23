@@ -14,6 +14,7 @@
 
 import { displayDecimals, enums, limits } from "../config.js";
 import { strings, warningText } from "../strings.pt-BR.js";
+import { createColorPicker } from "./color-picker.js";
 
 const NUMBER_STEP = 10 ** -displayDecimals;
 const MARGIN_SIDES = ["top", "right", "bottom", "left"];
@@ -217,9 +218,6 @@ function fieldElementId(path) {
   return `panel-field-${path.replace(/[^a-z0-9]+/gi, "-")}`;
 }
 
-function readPath(object, path) {
-  return path.split(".").reduce((node, key) => (node == null ? undefined : node[key]), object);
-}
 
 function writePath(object, path, value) {
   const keys = path.split(".");
@@ -314,19 +312,102 @@ function makeCheckboxControl(field, id) {
   return input;
 }
 
-/** input type=color only speaks #rrggbb; the alpha suffix is preserved on write. */
-function alphaSuffix(value) {
-  if (typeof value !== "string" || value.length !== 9) return "";
-  return value.slice(7).toUpperCase();
-}
+/**
+ * Colour control: a swatch button that opens the picker popover. Returns a small
+ * controller so `buildField` can treat it like the other inputs.
+ */
+function makeColorControl(field, id, commit) {
+  const host = document.createElement("div");
+  host.className = "field__color-host";
 
-function makeColorControl(field, id) {
-  const input = document.createElement("input");
-  input.type = "color";
-  input.id = id;
-  input.className = "field__color";
-  input.value = typeof field.value === "string" ? field.value.slice(0, 7).toLowerCase() : "#000000";
-  return input;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.id = id;
+  button.className = "field__color-button";
+
+  const chip = document.createElement("span");
+  chip.className = "field__color-chip";
+  const hexText = document.createElement("span");
+  hexText.className = "field__color-hex";
+  button.append(chip, hexText);
+
+  const popover = document.createElement("div");
+  popover.className = "field__color-popover";
+  popover.hidden = true;
+
+  host.append(button, popover);
+
+  let current = typeof field.value === "string" ? field.value.toUpperCase() : "#000000FF";
+  let picker = null;
+  let applying = false;
+
+  const paint = () => {
+    chip.style.background = current;
+    hexText.textContent = current.slice(0, 7);
+    button.setAttribute("aria-label", `${strings.picker.open}: ${current.slice(0, 7)}`);
+  };
+
+  const closePicker = () => {
+    if (picker) picker.destroy();
+    picker = null;
+    popover.hidden = true;
+    popover.replaceChildren();
+    button.setAttribute("aria-expanded", "false");
+    button.focus();
+  };
+
+  const openPicker = () => {
+    popover.replaceChildren();
+    picker = createColorPicker({
+      value: current,
+      onChange: (hex) => {
+        if (applying) return;
+        current = hex.toUpperCase();
+        paint();
+        commit(current);
+      },
+      onClose: closePicker,
+    });
+    popover.append(picker.node);
+    popover.hidden = false;
+    button.setAttribute("aria-expanded", "true");
+  };
+
+  button.setAttribute("aria-haspopup", "dialog");
+  button.setAttribute("aria-expanded", "false");
+  button.addEventListener("click", () => {
+    if (popover.hidden) openPicker();
+    else closePicker();
+  });
+
+  const onDocumentPointerDown = (event) => {
+    if (!host.contains(event.target)) closePicker();
+  };
+  document.addEventListener("pointerdown", onDocumentPointerDown);
+
+  paint();
+
+  return {
+    node: host,
+    focusTarget: button,
+    setValue(next) {
+      current = typeof next === "string" ? next.toUpperCase() : "#000000FF";
+      paint();
+      if (picker) {
+        applying = true;
+        picker.setValue(current);
+        applying = false;
+      }
+    },
+    getValue: () => current,
+    setDisabled(disabled) {
+      button.disabled = disabled === true;
+      if (disabled) closePicker();
+    },
+    destroy() {
+      document.removeEventListener("pointerdown", onDocumentPointerDown);
+    },
+  };
 }
 
 /**
@@ -339,18 +420,39 @@ function buildField(field, store) {
   row.className = `field field--${field.type}`;
   row.dataset.field = field.id;
 
+  const commit = (value) => {
+    store.update((draft) => writePath(draft, field.path, value), {
+      tag: field.id,
+      label: field.label,
+    });
+  };
+
   let control;
-  if (field.type === "number") control = makeNumberControl(field, id);
-  else if (field.type === "select") control = makeSelectControl(field, id);
-  else if (field.type === "checkbox") control = makeCheckboxControl(field, id);
-  else control = makeColorControl(field, id);
+  let controlNode;
+  let colorControl = null;
+
+  if (field.type === "number") {
+    control = makeNumberControl(field, id);
+    controlNode = control;
+  } else if (field.type === "select") {
+    control = makeSelectControl(field, id);
+    controlNode = control;
+  } else if (field.type === "checkbox") {
+    control = makeCheckboxControl(field, id);
+    controlNode = control;
+  } else {
+    control = makeColorControl(field, id, commit);
+    colorControl = control;
+    controlNode = control.node;
+  }
 
   const warning = makeWarningNode(id);
   const help = makeHelpNode(id, field.help);
 
   const describedBy = [help?.id, warning.id].filter(Boolean).join(" ");
-  control.setAttribute("aria-describedby", describedBy);
-  control.disabled = field.disabled === true;
+  controlNode.setAttribute("aria-describedby", describedBy);
+  if (colorControl) colorControl.setDisabled(field.disabled);
+  else controlNode.disabled = field.disabled === true;
 
   if (field.type === "checkbox") {
     const label = document.createElement("label");
@@ -359,7 +461,7 @@ function buildField(field, store) {
     const text = document.createElement("span");
     text.className = "field__label";
     text.textContent = field.label;
-    label.append(control, text);
+    label.append(controlNode, text);
     row.append(label);
   } else {
     const head = document.createElement("div");
@@ -375,18 +477,11 @@ function buildField(field, store) {
       unit.textContent = field.unit;
       head.append(unit);
     }
-    row.append(head, control);
+    row.append(head, controlNode);
   }
 
   if (help) row.append(help);
   row.append(warning);
-
-  const commit = (value) => {
-    store.update((draft) => writePath(draft, field.path, value), {
-      tag: field.id,
-      label: field.label,
-    });
-  };
 
   const showWarning = (message) => {
     if (message) {
@@ -434,14 +529,12 @@ function buildField(field, store) {
     control.addEventListener("change", () => commit(control.value));
   } else if (field.type === "checkbox") {
     control.addEventListener("change", () => commit(control.checked));
-  } else if (field.type === "color") {
-    control.addEventListener("input", () => {
-      commit(`${control.value.toUpperCase()}${alphaSuffix(readPath(store.getPreset(), field.path))}`);
-    });
   }
 
   const apply = (next) => {
-    control.disabled = next.disabled === true;
+    if (colorControl) colorControl.setDisabled(next.disabled);
+    else control.disabled = next.disabled === true;
+
     if (next.type === "number") {
       lastValidValue = next.value;
       if (document.activeElement !== control) control.value = formatNumber(next.value);
@@ -450,13 +543,15 @@ function buildField(field, store) {
     } else if (next.type === "checkbox") {
       control.checked = next.value === true;
     } else {
-      control.value = typeof next.value === "string" ? next.value.slice(0, 7).toLowerCase() : "#000000";
+      colorControl.setValue(next.value);
     }
+
     presetWarning = next.warning?.message ?? null;
-    showWarning(document.activeElement === control && pendingWarning ? pendingWarning : presetWarning);
+    const focused = document.activeElement === (colorControl ? colorControl.focusTarget : control);
+    showWarning(focused && pendingWarning ? pendingWarning : presetWarning);
   };
 
-  return { node: row, apply };
+  return { node: row, apply, colorControl };
 }
 
 function sectionNode(key, label, fields, store, open) {

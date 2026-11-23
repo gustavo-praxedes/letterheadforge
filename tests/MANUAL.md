@@ -14,6 +14,9 @@ Medido por fórmula (luminância relativa), não por opinião. Recalcular com os
 | `--color-text-muted` sobre `--color-surface-sunken` | 6,90:1 | 4,5 | passa |
 | `--color-accent-contrast` sobre `--color-accent` | 5,89:1 | 4,5 | passa |
 | `--color-accent-contrast` sobre `--color-accent-strong` | 8,29:1 | 4,5 | passa |
+| `--color-disabled-text` sobre `--color-disabled-surface` (botão desativado) | 6,42:1 | 4,5 | passa |
+
+Nota: botão desativado **não** usa `opacity`. Em 0,55 o texto branco sobre o acento caía para 2,4:1 (medido pela revisão visual na rodada `m2-05`); hoje o estado desativado tem par de cores próprio.
 
 Registro: a revisão visual cega da rodada 3 apontou o status do preview e a aba inativa como "baixo contraste". A medição acima desmente (6,9:1 e 7,42:1). Vale a medição — AGENTS.md §4: opinião do revisor não substitui o checklist.
 

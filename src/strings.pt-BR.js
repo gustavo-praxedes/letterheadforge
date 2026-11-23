@@ -72,6 +72,17 @@ export const strings = {
     statusLoading: "Montando a pré-visualização…",
     statusReady: "Pré-visualização pronta",
   },
+  picker: {
+    title: "Escolher cor",
+    saturation: "Saturação e brilho",
+    hue: "Matiz",
+    alpha: "Opacidade",
+    hex: "Hexadecimal",
+    eyedropper: "Conta-gotas",
+    close: "Concluir",
+    invalidHex: "Hexadecimal inválido.",
+    open: "Abrir seletor de cor",
+  },
   units: {
     millimetre: "mm",
     point: "pt",

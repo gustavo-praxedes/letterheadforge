@@ -199,7 +199,7 @@ button {
 }
 
 .segmented .button {
-  min-height: calc(var(--touch-target) - var(--space-2));
+  min-height: var(--touch-target);
   border: none;
   border-radius: var(--radius-pill);
   background: transparent;

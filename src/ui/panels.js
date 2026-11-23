@@ -990,10 +990,19 @@ function buildField(field, store, { commit: commitOverride = null } = {}) {
     // Chromium forward the click twice and the toggle cancels out.
     const toggle = document.createElement("div");
     toggle.className = "field__toggle";
+    toggle.style.cursor = "pointer";
     const text = document.createElement("label");
     text.className = "field__label";
     text.htmlFor = id;
     text.textContent = field.label;
+    // The whole row toggles, so the target is 44 px tall. The label's native
+    // forwarding is cancelled to avoid toggling twice.
+    toggle.addEventListener("click", (event) => {
+      if (event.target === controlNode || controlNode.disabled) return;
+      event.preventDefault();
+      controlNode.checked = !controlNode.checked;
+      controlNode.dispatchEvent(new Event("change", { bubbles: true }));
+    });
     toggle.append(controlNode, text);
     row.append(toggle);
   } else {

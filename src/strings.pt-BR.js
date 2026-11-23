@@ -23,6 +23,7 @@ export const strings = {
       ruling: "Pauta",
       watermark: "Marca d'água",
       layers: "Objetos e camadas",
+      objects: "Objeto selecionado",
     },
     fields: {
       size: "Tamanho",
@@ -83,6 +84,7 @@ export const strings = {
         dashdot: "Traço e ponto",
       },
       rulingMode: { spacing: "Por passo", count: "Por quantidade" },
+      alignment: { left: "Esquerda", center: "Centralizado", right: "Direita", justify: "Justificado" },
     },
     help: {
       pageColor: "Papéis claros gastam menos tinta e imprimem melhor.",
@@ -127,6 +129,45 @@ export const strings = {
       rename: "Renomear",
     },
   },
+  objects: {
+    empty: "Selecione uma caixa de texto na lista de camadas para editar o conteúdo.",
+    names: {
+      text: "Texto {index}",
+      image: "Imagem {index}",
+    },
+    describe: {
+      label: "{name} · {type}",
+      excerpt: "{label} — “{excerpt}”",
+      emptyText: "{label} — vazio",
+      excerptMax: 40,
+    },
+    fields: {
+      content: "Conteúdo",
+      font: "Fonte",
+      size: "Corpo",
+      weight: "Peso",
+      italic: "Itálico",
+      color: "Cor do texto",
+      align: "Alinhamento",
+    },
+    actions: {
+      addText: "Nova caixa de texto",
+      addImage: "Nova imagem",
+    },
+    enums: {
+      weight: {
+        300: "Leve",
+        400: "Normal",
+        500: "Médio",
+        600: "Seminegrito",
+        700: "Negrito",
+      },
+    },
+    help: {
+      content: "A quebra de linha acontece por palavras; o excesso é cortado na caixa.",
+      size: "De {min} a {max} pt.",
+    },
+  },
   picker: {
     title: "Escolher cor",
     saturation: "Saturação e brilho",
@@ -153,6 +194,7 @@ export const strings = {
       "image.limitCount": "Máximo de {max} imagens por preset.",
       "image.lowPpi": "Resolução efetiva abaixo de {minPpi} ppi.",
       "text.overflow": "O texto foi cortado na caixa.",
+      "text.limitCount": "Máximo de {max} caixas de texto por preset.",
       "font.loadFailed": "Não foi possível baixar a fonte. A exportação fica bloqueada.",
       "font.missingGlyph": "A fonte não tem todos os caracteres usados.",
       "storage.quota": "O navegador está sem espaço. Exporte o preset em JSON.",

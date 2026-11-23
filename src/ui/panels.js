@@ -17,7 +17,16 @@ import { displayDecimals, enums, limits } from "../config.js";
 import { strings, warningText } from "../strings.pt-BR.js";
 import { layoutSheet } from "../core/layout.js";
 import { rulingArea } from "../core/ruling.js";
+import { shortList } from "../fonts/catalog.js";
 import { createColorPicker } from "./color-picker.js";
+import {
+  addImage,
+  addTextBox,
+  canAddImage,
+  canAddTextBox,
+  updateTextContent,
+  updateTextStyle,
+} from "./objects.js";
 
 const NUMBER_STEP = 10 ** -displayDecimals;
 const MARGIN_SIDES = ["top", "right", "bottom", "left"];
@@ -356,6 +365,173 @@ export function panelFields(preset) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Objects: the selected text box, plus the creation actions           */
+/* ------------------------------------------------------------------ */
+
+const OBJECT_FIELD_IDS = {
+  content: "objects.text.content",
+  font: "objects.text.fontId",
+  size: "objects.text.sizePt",
+  weight: "objects.text.weight",
+  italic: "objects.text.italic",
+  color: "objects.text.color",
+  align: "objects.text.align",
+};
+
+function selectedTextObject(preset, selectedId) {
+  if (selectedId === null || selectedId === undefined) return null;
+  const objects = Array.isArray(preset?.objects) ? preset.objects : [];
+  return objects.find((object) => object?.id === selectedId && object.type === "text") ?? null;
+}
+
+/** One creation button; the gate comes from the pure module. */
+function actionField(id, label, gate) {
+  return {
+    id,
+    type: "action",
+    label,
+    disabled: gate.ok !== true,
+    warning: gate.ok ? null : { code: gate.code, message: warningText(gate.code, gate.params) },
+  };
+}
+
+function fontOptions(object, fonts) {
+  const list = Array.isArray(fonts) && fonts.length > 0 ? fonts : null;
+  if (!list) return [{ value: String(object.fontId), label: String(object.fontId) }];
+  const options = list.map((font) => ({ value: String(font.id), label: font.family ?? String(font.id) }));
+  if (!options.some((option) => option.value === String(object.fontId))) {
+    options.unshift({ value: String(object.fontId), label: String(object.fontId) });
+  }
+  return options;
+}
+
+function weightOptions(object, fonts) {
+  const font = (Array.isArray(fonts) ? fonts : []).find((entry) => entry.id === object.fontId);
+  const weights = Array.isArray(font?.weights) && font.weights.length > 0 ? font.weights : [object.weight];
+  const options = weights
+    .filter((weight) => typeof weight === "number" && Number.isFinite(weight))
+    .map((weight) => ({ value: String(weight), label: strings.objects.enums.weight[weight] ?? String(weight) }));
+  if (!options.some((option) => option.value === String(object.weight))) {
+    options.unshift({
+      value: String(object.weight),
+      label: strings.objects.enums.weight[object.weight] ?? String(object.weight),
+    });
+  }
+  return options;
+}
+
+function alignOptions() {
+  return enums.alignments.map((value) => ({
+    value,
+    label: strings.panels.enums.alignment[value] ?? value,
+  }));
+}
+
+/**
+ * Descriptors of the objects section: the two creation actions, then the fields
+ * of the selected text box. `selectedId` comes from the store (UI state, never
+ * from the preset) and `fonts` from `data/fonts.json`; without a catalogue the
+ * font select still shows the current font.
+ */
+export function objectsSection(preset, { selectedId = null, fonts = [] } = {}) {
+  const actions = [
+    actionField("objects.addText", strings.objects.actions.addText, canAddTextBox(preset)),
+    actionField("objects.addImage", strings.objects.actions.addImage, canAddImage(preset)),
+  ];
+
+  const object = selectedTextObject(preset, selectedId);
+  if (!object) return [...actions, { id: "objects.empty", type: "hint", text: strings.objects.empty }];
+
+  const sizeHelp = fillMessage(strings.objects.help.size, {
+    min: limits.textSizePt.min,
+    max: limits.textSizePt.max,
+  });
+
+  return [
+    ...actions,
+    {
+      id: OBJECT_FIELD_IDS.content,
+      type: "textarea",
+      label: strings.objects.fields.content,
+      value: typeof object.text === "string" ? object.text : "",
+      help: strings.objects.help.content,
+      disabled: false,
+      kind: "content",
+    },
+    {
+      id: OBJECT_FIELD_IDS.font,
+      type: "select",
+      label: strings.objects.fields.font,
+      value: String(object.fontId),
+      options: fontOptions(object, fonts),
+      help: null,
+      disabled: false,
+      kind: "style",
+      styleKey: "fontId",
+    },
+    {
+      id: OBJECT_FIELD_IDS.size,
+      type: "number",
+      label: strings.objects.fields.size,
+      value: object.sizePt,
+      min: limits.textSizePt.min,
+      max: limits.textSizePt.max,
+      step: 1,
+      unit: strings.units.point,
+      help: sizeHelp,
+      warning: null,
+      disabled: false,
+      kind: "style",
+      styleKey: "sizePt",
+      parse: Number,
+    },
+    {
+      id: OBJECT_FIELD_IDS.weight,
+      type: "select",
+      label: strings.objects.fields.weight,
+      value: String(object.weight),
+      options: weightOptions(object, fonts),
+      help: null,
+      disabled: false,
+      kind: "style",
+      styleKey: "weight",
+      parse: Number,
+    },
+    {
+      id: OBJECT_FIELD_IDS.italic,
+      type: "checkbox",
+      label: strings.objects.fields.italic,
+      value: object.italic === true,
+      help: null,
+      disabled: false,
+      kind: "style",
+      styleKey: "italic",
+    },
+    {
+      id: OBJECT_FIELD_IDS.color,
+      type: "color",
+      label: strings.objects.fields.color,
+      value: object.color,
+      help: null,
+      disabled: false,
+      kind: "style",
+      styleKey: "color",
+    },
+    {
+      id: OBJECT_FIELD_IDS.align,
+      type: "select",
+      label: strings.objects.fields.align,
+      value: object.align,
+      options: alignOptions(),
+      help: null,
+      disabled: false,
+      kind: "style",
+      styleKey: "align",
+    },
+  ];
+}
+
+/* ------------------------------------------------------------------ */
 /* DOM renderer                                                        */
 /* ------------------------------------------------------------------ */
 
@@ -455,6 +631,16 @@ function makeCheckboxControl(field, id) {
   input.className = "field__checkbox";
   input.checked = field.value === true;
   return input;
+}
+
+function makeTextareaControl(field, id) {
+  const area = document.createElement("textarea");
+  area.id = id;
+  area.className = "field__input field__input--textarea";
+  area.rows = 3;
+  area.autocomplete = "off";
+  area.value = typeof field.value === "string" ? field.value : "";
+  return area;
 }
 
 /**
@@ -564,19 +750,23 @@ function makeColorControl(field, id, commit) {
 /**
  * One field: label, control, optional unit, help and a live warning.
  * Returns the node plus an `apply(descriptor)` used on store changes.
+ * `commit` overrides the default "write the path into the preset" behaviour —
+ * the objects section uses it to call the pure update functions instead.
  */
-function buildField(field, store) {
+function buildField(field, store, { commit: commitOverride = null } = {}) {
   const id = fieldElementId(field.id);
   const row = document.createElement("div");
   row.className = `field field--${field.type}`;
   row.dataset.field = field.id;
 
-  const commit = (value) => {
-    store.update((draft) => writePath(draft, field.path, value), {
-      tag: field.id,
-      label: field.label,
+  const commit =
+    commitOverride ??
+    ((value) => {
+      store.update((draft) => writePath(draft, field.path, value), {
+        tag: field.id,
+        label: field.label,
+      });
     });
-  };
 
   let control;
   let controlNode;
@@ -590,6 +780,9 @@ function buildField(field, store) {
     controlNode = control;
   } else if (field.type === "checkbox") {
     control = makeCheckboxControl(field, id);
+    controlNode = control;
+  } else if (field.type === "textarea") {
+    control = makeTextareaControl(field, id);
     controlNode = control;
   } else {
     control = makeColorControl(field, id, commit);
@@ -682,6 +875,8 @@ function buildField(field, store) {
     control.addEventListener("change", () => commit(control.value));
   } else if (field.type === "checkbox") {
     control.addEventListener("change", () => commit(control.checked));
+  } else if (field.type === "textarea") {
+    control.addEventListener("input", () => commit(control.value));
   }
 
   const apply = (next) => {
@@ -695,6 +890,10 @@ function buildField(field, store) {
       control.value = next.value;
     } else if (next.type === "checkbox") {
       control.checked = next.value === true;
+    } else if (next.type === "textarea") {
+      if (document.activeElement !== control) {
+        control.value = typeof next.value === "string" ? next.value : "";
+      }
     } else {
       colorControl.setValue(next.value);
     }
@@ -732,8 +931,180 @@ function sectionNode(key, label, fields, store, open) {
 }
 
 /**
- * Mount the three panels in `host`, keep every control in sync with the store
- * and call `onChange` (preview refresh hook) after each change.
+ * Font catalogue from `data/fonts.json` (spec 7.1). Fetched once, lazily, and
+ * only used to fill the font select: without it the select still shows the
+ * font the text box already uses.
+ */
+let fontCatalogue = null;
+let fontCataloguePromise = null;
+
+function loadFontCatalogue() {
+  if (fontCatalogue) return Promise.resolve(fontCatalogue);
+  if (fontCataloguePromise) return fontCataloguePromise;
+  if (typeof fetch !== "function") return Promise.resolve([]);
+  fontCataloguePromise = fetch("data/fonts.json")
+    .then((response) => (response.ok ? response.json() : null))
+    .then((data) => {
+      fontCatalogue = shortList(data);
+      return fontCatalogue;
+    })
+    .catch(() => {
+      fontCatalogue = [];
+      return fontCatalogue;
+    });
+  return fontCataloguePromise;
+}
+
+/**
+ * Objects section: creation buttons plus the editor of the selected text box.
+ * Fields commit through the pure functions in objects.js, never by writing a
+ * dotted path — the objects are a list, not a tree.
+ */
+function objectsSectionNode(store) {
+  const panel = document.createElement("details");
+  panel.className = "panel";
+  panel.dataset.section = "objects";
+  panel.open = false;
+
+  const summary = document.createElement("summary");
+  summary.className = "panel__summary";
+  const title = document.createElement("span");
+  title.textContent = strings.panels.sections.objects;
+  const chevron = document.createElement("span");
+  chevron.className = "panel__chevron";
+  chevron.setAttribute("aria-hidden", "true");
+  summary.append(title, chevron);
+
+  const body = document.createElement("div");
+  body.className = "panel__body panel__body--fields";
+
+  panel.append(summary, body);
+
+  let fonts = [];
+  let mounted = [];
+  let signature = null;
+
+  const commitFor = (descriptor) => (raw) => {
+    const value = typeof descriptor.parse === "function" ? descriptor.parse(raw) : raw;
+    const objectId = descriptor.target;
+    store.update((draft) => {
+      const result =
+        descriptor.kind === "content"
+          ? updateTextContent(draft, objectId, value)
+          : updateTextStyle(draft, objectId, { [descriptor.styleKey]: value });
+      if (!result.ok) return;
+      Object.assign(draft, result.preset);
+    }, { tag: descriptor.id, label: descriptor.label });
+  };
+
+  const addObject = (descriptor) => () => {
+    store.update((draft) => {
+      const result = descriptor.id === "objects.addImage" ? addImage(draft) : addTextBox(draft);
+      if (!result.ok) return;
+      Object.assign(draft, result.preset);
+    }, { tag: null, label: descriptor.label });
+    const objects = store.getPreset().objects ?? [];
+    const created = objects[objects.length - 1] ?? null;
+    store.select(created ? created.id : null);
+  };
+
+  const buildAction = (descriptor) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.id = fieldElementId(descriptor.id);
+    button.className = "objects__action";
+    button.textContent = descriptor.label;
+    button.addEventListener("click", addObject(descriptor));
+
+    const apply = (next) => {
+      button.disabled = next.disabled === true;
+      if (next.warning) {
+        button.title = next.warning.message;
+        button.setAttribute("aria-description", next.warning.message);
+      } else {
+        button.removeAttribute("title");
+        button.removeAttribute("aria-description");
+      }
+    };
+    apply(descriptor);
+    return { node: button, apply };
+  };
+
+  const buildHint = (descriptor) => {
+    const node = document.createElement("p");
+    node.className = "field__help";
+    node.textContent = descriptor.text;
+    return { node, apply: () => {} };
+  };
+
+  const render = () => {
+    const preset = store.getPreset();
+    const selectedId = store.getSelection();
+    const descriptors = objectsSection(preset, { selectedId, fonts });
+    const object = selectedTextObject(preset, selectedId);
+    const nextSignature = `${selectedId ?? ""}|${object ? object.id : "none"}|${fonts.length}`;
+
+    if (nextSignature === signature) {
+      mounted.forEach((entry, index) => entry.apply(descriptors[index]));
+      return;
+    }
+    signature = nextSignature;
+
+    const nodes = [];
+    const next = [];
+    let group = null;
+    for (const descriptor of descriptors) {
+      if (descriptor.type === "action") {
+        if (!group) {
+          group = document.createElement("div");
+          group.className = "objects__actions";
+          nodes.push(group);
+        }
+        const entry = buildAction(descriptor);
+        group.append(entry.node);
+        next.push(entry);
+        continue;
+      }
+      group = null;
+      if (descriptor.type === "hint") {
+        const entry = buildHint(descriptor);
+        nodes.push(entry.node);
+        next.push(entry);
+        continue;
+      }
+      const field = { ...descriptor, target: selectedId };
+      const built = buildField(field, store, { commit: commitFor(field) });
+      nodes.push(built.node);
+      next.push({ node: built.node, apply: built.apply });
+    }
+
+    mounted = next;
+    body.replaceChildren(...nodes);
+  };
+
+  render();
+
+  loadFontCatalogue().then((list) => {
+    if (!Array.isArray(list) || list.length === 0 || list.length === fonts.length) return;
+    fonts = list;
+    signature = null;
+    render();
+  });
+
+  return {
+    node: panel,
+    render,
+    setFonts(next) {
+      fonts = Array.isArray(next) ? next : [];
+      signature = null;
+      render();
+    },
+  };
+}
+
+/**
+ * Mount the panels in `host`, keep every control in sync with the store and call
+ * `onChange` (preview refresh hook) after each change.
  */
 export function renderPanels(host, { store, onChange } = {}) {
   if (!host) throw new TypeError("renderPanels requires a host element");
@@ -754,18 +1125,27 @@ export function renderPanels(host, { store, onChange } = {}) {
     return { key, build, builders: mounted.builders };
   });
 
+  // Last section of this host: the layers panel is mounted after it by main.js.
+  const objects = objectsSectionNode(store);
+  host.append(objects.node);
+
   const sync = (preset) => {
     for (const { build, builders } of mounts) {
       const next = build(preset);
       builders.forEach((builder, index) => builder.apply(next[index]));
     }
+    objects.render();
   };
 
   const unsubscribe = store.subscribe((event) => {
+    if (event.type === "selection") {
+      objects.render();
+      return;
+    }
     if (event.type !== "change") return;
     sync(event.preset);
     if (typeof onChange === "function") onChange(event.preset, event);
   });
 
-  return { unsubscribe, sync };
+  return { unsubscribe, sync, objects };
 }

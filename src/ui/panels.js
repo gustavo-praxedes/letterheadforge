@@ -492,13 +492,15 @@ function makeColorControl(field, id, commit) {
     button.setAttribute("aria-label", `${strings.picker.open}: ${current.slice(0, 7)}`);
   };
 
-  const closePicker = () => {
-    if (picker) picker.destroy();
+  const closePicker = ({ restoreFocus = true } = {}) => {
+    if (!picker) return;
+    const hadFocusInside = popover.contains(document.activeElement);
+    picker.destroy();
     picker = null;
     popover.hidden = true;
     popover.replaceChildren();
     button.setAttribute("aria-expanded", "false");
-    button.focus();
+    if (restoreFocus && hadFocusInside) button.focus();
   };
 
   const openPicker = () => {
@@ -525,8 +527,12 @@ function makeColorControl(field, id, commit) {
     else closePicker();
   });
 
+  // Only the open picker reacts to outside clicks: stealing focus on every
+  // pointerdown in the page used to swallow clicks on checkboxes.
   const onDocumentPointerDown = (event) => {
-    if (!host.contains(event.target)) closePicker();
+    if (!picker) return;
+    if (host.contains(event.target)) return;
+    closePicker({ restoreFocus: false });
   };
   document.addEventListener("pointerdown", onDocumentPointerDown);
 
@@ -600,14 +606,16 @@ function buildField(field, store) {
   else controlNode.disabled = field.disabled === true;
 
   if (field.type === "checkbox") {
-    const label = document.createElement("label");
-    label.className = "field__toggle";
-    label.htmlFor = id;
-    const text = document.createElement("span");
+    // Input and label are siblings: nesting the input inside its own label makes
+    // Chromium forward the click twice and the toggle cancels out.
+    const toggle = document.createElement("div");
+    toggle.className = "field__toggle";
+    const text = document.createElement("label");
     text.className = "field__label";
+    text.htmlFor = id;
     text.textContent = field.label;
-    label.append(controlNode, text);
-    row.append(label);
+    toggle.append(controlNode, text);
+    row.append(toggle);
   } else {
     const head = document.createElement("div");
     head.className = "field__head";

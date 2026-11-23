@@ -26,6 +26,40 @@
       ]
     },
     {
+      "label": "app-pauta-aberta",
+      "path": "/",
+      "waitFor": "main",
+      "fullPage": true,
+      "actions": [
+        {
+          "type": "click",
+          "selector": "[data-section=\"ruling\"] .panel__summary"
+        }
+      ]
+    },
+    {
+      "label": "app-pauta-area-pequena",
+      "path": "/",
+      "waitFor": "main",
+      "fullPage": true,
+      "actions": [
+        {
+          "type": "click",
+          "selector": "[data-section=\"ruling\"] .panel__summary"
+        },
+        {
+          "type": "fill",
+          "selector": "[data-field=\"page.margins.top\"] input",
+          "value": "50"
+        },
+        {
+          "type": "fill",
+          "selector": "[data-field=\"page.margins.bottom\"] input",
+          "value": "50"
+        }
+      ]
+    },
+    {
       "label": "app-seletor-cor",
       "path": "/",
       "waitFor": "main",

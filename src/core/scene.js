@@ -4,6 +4,7 @@ import { cutMarks } from "./cutmarks.js";
 import { normalizeStroke } from "./strokes.js";
 import { buildRuling } from "./ruling.js";
 import { layoutText } from "./text-layout.js";
+import { ptToMm } from "./units.js";
 
 const WATERMARK_DEFAULT_WIDTH_RATIO = 0.5;
 const WATERMARK_DEFAULT_HEIGHT = 40;
@@ -71,12 +72,37 @@ function buildTextPrimitive({ objectId, box, style, text, measure, padding = 0, 
   };
 }
 
-function watermarkPrimitives({ preset, measure, warnings }) {
+/**
+ * Default geometry for a watermark that has none yet (spec 5.4): text starts at
+ * 48 pt with its measured width, an image takes half the sheet width, and both
+ * sit centred on the page. Explicit x/y/w/h always win.
+ */
+function watermarkGeometry({ watermark, sheet, measure }) {
+  const pageW = sheet?.w ?? 210;
+  const pageH = sheet?.h ?? 297;
+  const center = (value, size, limit) => (value > 0 ? value : Math.max(0, (limit - size) / 2));
+
+  if (watermark.kind === "image") {
+    const w = watermark.w > 0 ? watermark.w : pageW * WATERMARK_DEFAULT_WIDTH_RATIO;
+    const h = watermark.h > 0 ? watermark.h : w;
+    return { w, h, x: center(watermark.x, w, pageW), y: center(watermark.y, h, pageH) };
+  }
+
+  const text = watermark.text ?? {};
+  const style = { fontId: text.fontId, weight: text.weight, italic: text.italic, sizePt: text.sizePt };
+  const measured = typeof measure === "function" ? measure(text.content ?? "", style) : 0;
+  const w = watermark.w > 0 ? watermark.w : measured;
+  const h = watermark.h > 0 ? watermark.h : Math.max(ptToMm(text.sizePt ?? 48) * 1.3, 1);
+  return { w, h, x: center(watermark.x, w, pageW), y: center(watermark.y, h, pageH) };
+}
+
+function watermarkPrimitives({ preset, layout, measure, warnings }) {
   const watermark = preset.watermark;
   if (watermark.enabled !== true) return [];
 
-  const w = watermark.w > 0 ? watermark.w : undefined;
-  const h = watermark.h > 0 ? watermark.h : undefined;
+  const geometry = watermarkGeometry({ watermark, sheet: layout?.sheet ?? layout?.cells?.[0], measure });
+  const w = geometry.w > 0 ? geometry.w : undefined;
+  const h = geometry.h > 0 ? geometry.h : undefined;
 
   if (watermark.kind === "image") {
     if (!watermark.imageId) {
@@ -87,8 +113,8 @@ function watermarkPrimitives({ preset, measure, warnings }) {
       {
         kind: "image",
         imageId: watermark.imageId,
-        x: watermark.x,
-        y: watermark.y,
+        x: geometry.x,
+        y: geometry.y,
         w: w ?? 0,
         h: h ?? 0,
         rotation: watermark.rotation,
@@ -99,8 +125,8 @@ function watermarkPrimitives({ preset, measure, warnings }) {
 
   const text = watermark.text ?? {};
   const box = {
-    x: watermark.x,
-    y: watermark.y,
+    x: geometry.x,
+    y: geometry.y,
     w: w ?? 0,
     h: h ?? WATERMARK_DEFAULT_HEIGHT,
     rotation: watermark.rotation,
@@ -196,7 +222,7 @@ export function buildScene({ preset, layout, cellIndex = 0, alphaMasks = new Map
     const offsetY = isPage ? -cell.y : cell.y;
     const children = [];
 
-    children.push(...watermarkPrimitives({ preset, measure, warnings }).map((primitive) => ({
+    children.push(...watermarkPrimitives({ preset, layout, measure, warnings }).map((primitive) => ({
       ...primitive,
       x: primitive.x + offsetX,
       y: primitive.y + offsetY,

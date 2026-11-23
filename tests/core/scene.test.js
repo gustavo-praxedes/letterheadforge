@@ -183,3 +183,52 @@ test("buildScene refuses missing layout or measure for text", () => {
   ];
   assert.throws(() => buildScene({ preset, layout: A4, mode: "page" }), TypeError);
 });
+
+function flatten(list, out = []) {
+  for (const primitive of list ?? []) {
+    out.push(primitive);
+    flatten(primitive.children, out);
+  }
+  return out;
+}
+
+test("a watermark without geometry is centred and measured from its text", () => {
+  const preset = defaultPreset();
+  preset.watermark = {
+    ...preset.watermark,
+    enabled: true,
+    kind: "text",
+    x: 0,
+    y: 0,
+    w: 0,
+    h: 0,
+    text: { ...preset.watermark.text, content: "RASCUNHO", fontId: "inter", sizePt: 48, weight: 700 },
+  };
+  const scene = buildScene({ preset, layout: A4, mode: "page", measure });
+  const watermark = flatten(scene.primitives).find((primitive) => primitive.kind === "text");
+  assert.ok(watermark, "the watermark must reach the scene without an explicit width");
+  const width = measure("RASCUNHO", { sizePt: 48 });
+  assert.ok(Math.abs(watermark.w - width) < 0.001);
+  assert.ok(Math.abs(watermark.x - (210 - width) / 2) < 0.001);
+  assert.ok(watermark.y > 0);
+});
+
+test("an image watermark defaults to half the sheet width", () => {
+  const preset = defaultPreset();
+  preset.watermark = {
+    ...preset.watermark,
+    enabled: true,
+    kind: "image",
+    imageId: "img-1",
+    x: 0,
+    y: 0,
+    w: 0,
+    h: 0,
+  };
+  const scene = buildScene({ preset, layout: A4, mode: "page", measure });
+  const watermark = flatten(scene.primitives).find((primitive) => primitive.imageId === "img-1");
+  assert.ok(watermark);
+  assert.equal(watermark.w, 105);
+  assert.equal(watermark.h, 105);
+  assert.equal(watermark.x, 52.5);
+});

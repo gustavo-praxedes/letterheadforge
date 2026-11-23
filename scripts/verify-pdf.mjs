@@ -147,7 +147,7 @@ const report = [];
 
   // Read the geometry that is actually applied, instead of assuming defaults.
   const preset = await page.evaluate(async () => {
-    const mod = await import("/src/main.js");
+    const mod = await import("./src/main.js");
     const current = mod.store.getPreset();
     return { margins: current.page.margins, frame: current.frame, size: current.page.size };
   });
@@ -212,7 +212,7 @@ const report = [];
   await page.waitForTimeout(2500);
 
   const placedImageRect = await page.evaluate(async () => {
-    const mod = await import("/src/main.js");
+    const mod = await import("./src/main.js");
     const preset = mod.store.getPreset();
     const image = preset.objects.find((object) => object.type === "image");
     return image ? { x: image.x, y: image.y, w: image.w, h: image.h } : { x: 0, y: 0, w: 0, h: 0 };

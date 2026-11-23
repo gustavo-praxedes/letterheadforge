@@ -46,6 +46,7 @@ async function loadShots(path) {
 async function applyAction(page, action) {
   if (action.type === "click") await page.click(action.selector);
   else if (action.type === "fill") await page.fill(action.selector, action.value ?? "");
+  else if (action.type === "select") await page.selectOption(action.selector, action.value);
   else if (action.type === "press") await page.press(action.selector ?? "body", action.key);
   else if (action.type === "wait") await page.waitForTimeout(action.ms ?? 200);
   else if (action.type === "scrollIntoView") await page.locator(action.selector).scrollIntoViewIfNeeded();

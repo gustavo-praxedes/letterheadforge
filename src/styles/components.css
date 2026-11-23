@@ -543,6 +543,28 @@
     width: 100%;
   }
 
+  /* o preview fica preso no topo: mexer no painel e ver o efeito sem rolar */
+  .preview {
+    order: -1;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    padding: var(--space-2) var(--space-3);
+    gap: var(--space-2);
+    background: var(--color-surface-muted);
+    border-bottom: var(--border-width) solid var(--color-border);
+    box-shadow: var(--shadow-card);
+  }
+
+  .preview__stage {
+    --preview-max-height: 34vh;
+    padding: var(--space-2);
+  }
+
+  .preview__hint {
+    display: none;
+  }
+
   /* no mobile as abas não podem competir com o status pela mesma linha */
   .preview__toolbar {
     flex-wrap: wrap;

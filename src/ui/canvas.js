@@ -36,6 +36,8 @@ export function mountCanvas(host, { store, measure = null, mode = "page", onSele
   overlay.classList.add("canvas__overlay");
   overlay.setAttribute("aria-hidden", "true");
   host.append(sceneLayer, overlay);
+  host.dataset.mode = mode;
+  host.setAttribute("aria-readonly", String(mode === "sheet"));
 
   let scene = null;
   let layout = null;
@@ -51,6 +53,11 @@ export function mountCanvas(host, { store, measure = null, mode = "page", onSele
 
   function drawOverlay() {
     if (!scene) return;
+    // "A4 montada" is read-only (spec R52): no selection, no handles, no guides.
+    if (viewMode === "sheet") {
+      overlay.replaceChildren();
+      return;
+    }
     overlay.setAttribute("viewBox", `0 0 ${scene.widthMm} ${scene.heightMm}`);
     const selected = store.getSelection();
     const object = store.getPreset().objects?.find((item) => item.id === selected);
@@ -123,6 +130,11 @@ export function mountCanvas(host, { store, measure = null, mode = "page", onSele
     };
   }
 
+  function svgCursorDefault() {
+    const svg = sceneLayer.querySelector("svg");
+    if (svg) svg.style.cursor = viewMode === "sheet" ? "default" : "";
+  }
+
   function render() {
     const preset = store.getPreset();
     layout = currentLayout();
@@ -146,6 +158,7 @@ export function mountCanvas(host, { store, measure = null, mode = "page", onSele
 
   function onPointerDown(event) {
     if (event.button !== 0) return;
+    if (viewMode === "sheet") return;
     const svg = sceneLayer.querySelector("svg");
     if (!svg) return;
     const point = clientToMm(svg, event);
@@ -253,6 +266,9 @@ export function mountCanvas(host, { store, measure = null, mode = "page", onSele
     setMode(next) {
       if (next && next !== viewMode) {
         viewMode = next;
+        host.dataset.mode = viewMode;
+        host.setAttribute("aria-readonly", String(viewMode === "sheet"));
+        svgCursorDefault();
         render();
       }
     },

@@ -225,6 +225,50 @@
           "key": "?"
         }
       ]
+    },
+    {
+      "label": "app-montagem-a6",
+      "path": "/",
+      "waitFor": "main",
+      "fullPage": false,
+      "scale": 2,
+      "settleMs": 500,
+      "actions": [
+        {
+          "type": "click",
+          "selector": "[data-section=\"objects\"] .panel__summary"
+        },
+        {
+          "type": "click",
+          "selector": "#panel-field-objects-addText"
+        },
+        {
+          "type": "wait",
+          "ms": 350
+        },
+        {
+          "type": "fill",
+          "selector": "[data-section=\"objects\"] textarea",
+          "value": "Construtora FG"
+        },
+        {
+          "type": "select",
+          "selector": "[data-field=\"page.size\"] select",
+          "value": "A6"
+        },
+        {
+          "type": "wait",
+          "ms": 300
+        },
+        {
+          "type": "click",
+          "selector": "button[data-mode=\"sheet\"]"
+        },
+        {
+          "type": "wait",
+          "ms": 400
+        }
+      ]
     }
   ]
 }

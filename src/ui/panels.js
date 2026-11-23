@@ -1,19 +1,22 @@
 /**
- * Configuration panels for the sheet, the margins and the frame (spec 10.1).
+ * Configuration panels for the sheet, the margins, the ruling and the frame
+ * (spec 10.1).
  *
  * Two layers, deliberately separated:
- *  - pure descriptors (`pageSection`, `marginsSection`, `frameSection`): plain
- *    data, no DOM, testable in Node. Limits come from config.js, labels from
- *    strings.pt-BR.js and values from the preset.
+ *  - pure descriptors (`pageSection`, `marginsSection`, `rulingSection`,
+ *    `frameSection`): plain data, no DOM, testable in Node. Limits come from
+ *    config.js, labels from strings.pt-BR.js and values from the preset.
  *  - DOM renderer (`renderPanels`): builds the sections with createElement,
  *    wires every field to store.update() and re-syncs on store changes.
  *
  * No geometry is computed here: the core owns sizes, clamping of the corner
- * radius and every derived measurement.
+ * radius, the ruling area and every derived measurement.
  */
 
 import { displayDecimals, enums, limits } from "../config.js";
 import { strings, warningText } from "../strings.pt-BR.js";
+import { layoutSheet } from "../core/layout.js";
+import { rulingArea } from "../core/ruling.js";
 import { createColorPicker } from "./color-picker.js";
 
 const NUMBER_STEP = 10 ** -displayDecimals;
@@ -56,7 +59,7 @@ function selectOptions(kind, group) {
 }
 
 /** Number field; every limit comes from config.js. */
-function numberField({ id, path, label, value, min, max, unit, help = null, warning = null, disabled = false }) {
+function numberField({ id, path, label, value, min, max, step = NUMBER_STEP, unit, help = null, warning = null, disabled = false }) {
   return {
     id,
     type: "number",
@@ -64,7 +67,7 @@ function numberField({ id, path, label, value, min, max, unit, help = null, warn
     label,
     min,
     max,
-    step: NUMBER_STEP,
+    step,
     unit,
     value,
     help,
@@ -205,9 +208,151 @@ export function frameSection(preset) {
   ];
 }
 
+const RULING_AREA_CODE = "ruling.areaTooSmall";
+
+function rulingInsetPath(side) {
+  return `ruling.insets.${side}`;
+}
+
+function rulingAxisPath(axis, part) {
+  return `ruling.${axis}.${part}`;
+}
+
+/**
+ * Small-area warning, decided by the core: this module asks `rulingArea` for the
+ * first cell of the sheet layout instead of re-deriving the geometry.
+ */
+function rulingAreaWarning(preset) {
+  const ruling = preset?.ruling;
+  if (!ruling || ruling.enabled === false || !ruling.insets) return null;
+  const layout = layoutSheet(preset?.page?.size, preset?.page?.orientation);
+  if (!layout.ok) return null;
+  if (rulingArea({ preset, cell: layout.cells[0] }).ok) return null;
+  return { code: RULING_AREA_CODE, message: warningText(RULING_AREA_CODE) };
+}
+
+/** Pauta: on/off plus type, trace and the two independent axes with their insets. */
+export function rulingSection(preset) {
+  const ruling = preset?.ruling ?? {};
+  const off = ruling.enabled === false;
+  const dots = ruling.type === "dots";
+  const lines = ruling.type === "lines";
+  const areaWarning = rulingAreaWarning(preset);
+  const insets = ruling.insets ?? {};
+
+  const axisFields = (axis) => {
+    const data = ruling[axis] ?? {};
+    const axisOff = off || (axis === "x" && lines);
+    return [
+      selectField({
+        id: rulingAxisPath(axis, "mode"),
+        path: rulingAxisPath(axis, "mode"),
+        label: strings.panels.fields.rulingAxis[axis].mode,
+        value: data.mode,
+        kind: "rulingMode",
+        group: "rulingModes",
+        disabled: axisOff,
+      }),
+      numberField({
+        id: rulingAxisPath(axis, "spacing"),
+        path: rulingAxisPath(axis, "spacing"),
+        label: strings.panels.fields.rulingAxis[axis].spacing,
+        value: data.spacing,
+        min: limits.spacing.min,
+        max: limits.spacing.max,
+        unit: mm(),
+        disabled: axisOff || data.mode !== "spacing",
+      }),
+      numberField({
+        id: rulingAxisPath(axis, "count"),
+        path: rulingAxisPath(axis, "count"),
+        label: strings.panels.fields.rulingAxis[axis].count,
+        value: data.count,
+        min: limits.count.min,
+        max: limits.count.max,
+        step: 1,
+        unit: null,
+        disabled: axisOff || data.mode !== "count",
+      }),
+    ];
+  };
+
+  return [
+    checkboxField({
+      id: "ruling.enabled",
+      path: "ruling.enabled",
+      label: strings.panels.fields.rulingEnabled,
+      value: ruling.enabled,
+    }),
+    selectField({
+      id: "ruling.type",
+      path: "ruling.type",
+      label: strings.panels.fields.rulingType,
+      value: ruling.type,
+      kind: "rulingType",
+      group: "rulingTypes",
+      help: strings.panels.help.rulingType,
+      disabled: off,
+    }),
+    selectField({
+      id: "ruling.style",
+      path: "ruling.style",
+      label: strings.panels.fields.rulingStyle,
+      value: ruling.style,
+      kind: "rulingStyle",
+      group: "rulingStyles",
+      help: strings.panels.help.rulingStyle,
+      disabled: off || dots,
+    }),
+    colorField({
+      id: "ruling.color",
+      path: "ruling.color",
+      label: strings.panels.fields.rulingColor,
+      value: ruling.color,
+      disabled: off,
+    }),
+    numberField({
+      id: "ruling.thickness",
+      path: "ruling.thickness",
+      label: strings.panels.fields.rulingThickness,
+      value: ruling.thickness,
+      min: limits.rulingThickness.min,
+      max: limits.rulingThickness.max,
+      unit: mm(),
+      disabled: off,
+    }),
+    numberField({
+      id: "ruling.dotRadius",
+      path: "ruling.dotRadius",
+      label: strings.panels.fields.rulingDotRadius,
+      value: ruling.dotRadius,
+      min: limits.dotRadius.min,
+      max: limits.dotRadius.max,
+      unit: mm(),
+      disabled: off || !dots,
+    }),
+    ...axisFields("y"),
+    ...axisFields("x"),
+    ...MARGIN_SIDES.map((side) =>
+      numberField({
+        id: rulingInsetPath(side),
+        path: rulingInsetPath(side),
+        label: strings.panels.fields.rulingInsets[side],
+        value: insets[side],
+        min: limits.insets.min,
+        max: limits.insets.max,
+        unit: mm(),
+        help: side === "top" ? strings.panels.help.rulingInsets : null,
+        warning: areaWarning,
+        disabled: off,
+      }),
+    ),
+  ];
+}
+
 /** All descriptors, in display order. */
 export function panelFields(preset) {
-  return [...pageSection(preset), ...marginsSection(preset), ...frameSection(preset)];
+  return [...pageSection(preset), ...marginsSection(preset), ...rulingSection(preset), ...frameSection(preset)];
 }
 
 /* ------------------------------------------------------------------ */
@@ -591,6 +736,7 @@ export function renderPanels(host, { store, onChange } = {}) {
   const sections = [
     { key: "page", label: strings.panels.sections.page, build: pageSection, open: true },
     { key: "margins", label: strings.panels.sections.margins, build: marginsSection, open: true },
+    { key: "ruling", label: strings.panels.sections.ruling, build: rulingSection, open: false },
     { key: "frame", label: strings.panels.sections.frame, build: frameSection, open: false },
   ];
 

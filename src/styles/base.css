@@ -232,11 +232,11 @@ button {
 .preview__stage > svg:not(.canvas__overlay),
 .canvas__scene svg {
   display: block;
-  height: var(--preview-max-height);
-  max-height: 100%;
-  width: auto;
-  max-width: 100%;
-  aspect-ratio: 210 / 297;
+  /* Altura e largura livres, limitadas por ambos os eixos: com `height` fixo o
+     navegador encolhia só a largura para caber na janela e a proporção da folha
+     quebrava — a A4 montada aparecia em retrato com faixas vazias. */
+  height: 100%;
+  width: 100%;
   background: var(--color-surface);
   box-shadow: var(--shadow-paper);
   border-radius: var(--radius-sm);

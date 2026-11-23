@@ -30,12 +30,17 @@ export function mountCanvas(host, { store, measure = null, mode = "page", onSele
   host.replaceChildren();
   host.classList.add("canvas");
 
+  // The stage is the canvas; the sheet lives in a frame whose size the fit sets.
+  // Sizing the stage itself stretched the preview box instead of the paper.
+  const frame = document.createElement("div");
+  frame.className = "canvas__frame";
   const sceneLayer = document.createElement("div");
   sceneLayer.className = "canvas__scene";
   const overlay = document.createElementNS(SVG_NS, "svg");
   overlay.classList.add("canvas__overlay");
   overlay.setAttribute("aria-hidden", "true");
-  host.append(sceneLayer, overlay);
+  frame.append(sceneLayer, overlay);
+  host.append(frame);
   host.dataset.mode = mode;
   host.setAttribute("aria-readonly", String(mode === "sheet"));
 
@@ -135,6 +140,29 @@ export function mountCanvas(host, { store, measure = null, mode = "page", onSele
     if (svg) svg.style.cursor = viewMode === "sheet" ? "default" : "";
   }
 
+  /**
+   * Fits the sheet inside the stage keeping its own ratio. Do not leave this to
+   * CSS `aspect-ratio` with two max constraints: Chromium clamps one axis and
+   * the sheet ends up letterboxed inside a wrong-shaped box.
+   */
+  function fitToStage() {
+    if (!scene) return;
+    const stage = host;
+    const styles = getComputedStyle(stage);
+    const availW = stage.clientWidth - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
+    const availH = stage.clientHeight - parseFloat(styles.paddingTop) - parseFloat(styles.paddingBottom);
+    if (!(availW > 0) || !(availH > 0)) return;
+    const ratio = scene.widthMm / scene.heightMm;
+    let width = availW;
+    let height = width / ratio;
+    if (height > availH) {
+      height = availH;
+      width = height * ratio;
+    }
+    frame.style.width = `${Math.round(width)}px`;
+    frame.style.height = `${Math.round(height)}px`;
+  }
+
   function render() {
     const preset = store.getPreset();
     layout = currentLayout();
@@ -145,11 +173,10 @@ export function mountCanvas(host, { store, measure = null, mode = "page", onSele
     }
     scene = buildScene({ preset, layout, mode: viewMode, ...(measure ? { measure } : {}) });
     const svg = mountScene(sceneLayer, scene, { label: strings.preview.ariaLabel });
-    // An SVG without width/height attributes gets a 0x0 viewport unless CSS gives
-    // it a ratio: the box would paint its background while the content vanished.
-    svg.style.aspectRatio = `${scene.widthMm} / ${scene.heightMm}`;
+    svg.removeAttribute("style");
     svg.addEventListener("pointerdown", onPointerDown);
     drawOverlay();
+    fitToStage();
   }
 
   function targetsFor(object) {
@@ -256,6 +283,9 @@ export function mountCanvas(host, { store, measure = null, mode = "page", onSele
 
   render();
 
+  const observer = typeof ResizeObserver === "function" ? new ResizeObserver(() => fitToStage()) : null;
+  observer?.observe(host);
+
   const unsubscribe = store.subscribe((event) => {
     if (event.type === "change" || event.type === "selection") render();
   });
@@ -263,6 +293,8 @@ export function mountCanvas(host, { store, measure = null, mode = "page", onSele
   return {
     node: host,
     refresh: render,
+    fit: fitToStage,
+    destroy: () => observer?.disconnect(),
     setMode(next) {
       if (next && next !== viewMode) {
         viewMode = next;

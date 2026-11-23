@@ -48,6 +48,8 @@ export default [
         DOMPoint: "readonly",
         matchMedia: "readonly",
         Event: "readonly",
+        getComputedStyle: "readonly",
+        ResizeObserver: "readonly",
         FontFace: "readonly",
         Image: "readonly",
         performance: "readonly",

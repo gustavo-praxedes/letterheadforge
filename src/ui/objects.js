@@ -101,6 +101,44 @@ export function addImage(preset, props = {}) {
 }
 
 /**
+ * Where a freshly imported image lands on the page: at most `ratio` of the
+ * content width, never taller than the content area, aspect preserved, centred.
+ */
+export function fitImageInPage({ pageWidthMm, pageHeightMm, margins = {}, pixelWidth, pixelHeight, ratio = 0.6 } = {}) {
+  const numbers = [pageWidthMm, pageHeightMm, pixelWidth, pixelHeight];
+  if (numbers.some((value) => typeof value !== "number" || !Number.isFinite(value) || value <= 0)) {
+    return { ok: false, code: "image.invalidFile" };
+  }
+  const left = typeof margins.left === "number" ? margins.left : 0;
+  const right = typeof margins.right === "number" ? margins.right : 0;
+  const top = typeof margins.top === "number" ? margins.top : 0;
+  const bottom = typeof margins.bottom === "number" ? margins.bottom : 0;
+  const contentWidth = pageWidthMm - left - right;
+  const contentHeight = pageHeightMm - top - bottom;
+  if (contentWidth <= 0 || contentHeight <= 0) {
+    return { ok: false, code: "invalid.contentArea" };
+  }
+
+  let width = contentWidth * ratio;
+  let height = (pixelHeight / pixelWidth) * width;
+  if (height > contentHeight) {
+    height = contentHeight;
+    width = (pixelWidth / pixelHeight) * height;
+  }
+  return {
+    ok: true,
+    w: round(width),
+    h: round(height),
+    x: round((pageWidthMm - width) / 2),
+    y: round((pageHeightMm - height) / 2),
+  };
+}
+
+function round(value) {
+  return Math.round(value * 100) / 100;
+}
+
+/**
  * Check an image file before importing it (spec 5.2, R82/R83/R102/R121).
  *
  * `bytes` and the pixel size decide the hard limits. The effective resolution

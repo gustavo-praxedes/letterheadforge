@@ -1174,7 +1174,7 @@ function loadFontCatalogue() {
  * Fields commit through the pure functions in objects.js, never by writing a
  * dotted path — the objects are a list, not a tree.
  */
-function objectsSectionNode(store) {
+function objectsSectionNode(store, options = {}) {
   const panel = document.createElement("details");
   panel.className = "panel";
   panel.dataset.section = "objects";
@@ -1212,6 +1212,11 @@ function objectsSectionNode(store) {
   };
 
   const addObject = (descriptor) => () => {
+    // an image without a file is an invisible object: ask for the file instead
+    if (descriptor.id === "objects.addImage" && typeof options.onRequestImage === "function") {
+      options.onRequestImage();
+      return;
+    }
     store.update((draft) => {
       const result = descriptor.id === "objects.addImage" ? addImage(draft) : addTextBox(draft);
       if (!result.ok) return;
@@ -1320,7 +1325,7 @@ function objectsSectionNode(store) {
  * Mount the panels in `host`, keep every control in sync with the store and call
  * `onChange` (preview refresh hook) after each change.
  */
-export function renderPanels(host, { store, onChange } = {}) {
+export function renderPanels(host, { store, onChange, onRequestImage = null } = {}) {
   if (!host) throw new TypeError("renderPanels requires a host element");
   if (!store) throw new TypeError("renderPanels requires a store");
 
@@ -1355,7 +1360,7 @@ export function renderPanels(host, { store, onChange } = {}) {
   });
 
   // Last section of this host: the layers panel is mounted after it by main.js.
-  const objects = objectsSectionNode(store);
+  const objects = objectsSectionNode(store, { onRequestImage });
   host.append(objects.node);
 
   const sync = (preset) => {

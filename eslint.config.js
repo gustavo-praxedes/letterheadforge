@@ -49,6 +49,7 @@ export default [
         matchMedia: "readonly",
         Event: "readonly",
         getComputedStyle: "readonly",
+        createImageBitmap: "readonly",
         ResizeObserver: "readonly",
         FontFace: "readonly",
         Image: "readonly",

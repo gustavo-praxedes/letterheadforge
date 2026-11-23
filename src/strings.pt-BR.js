@@ -13,6 +13,7 @@ export const strings = {
     exportPdf: "Exportar PDF",
     storageUnavailable: "Não foi possível guardar o rascunho neste navegador. O trabalho continua, mas não será restaurado ao recarregar.",
     exportPending: "A exportação entra no próximo marco",
+    presetSaved: "Modelo “{name}” salvo neste navegador.",
   },
   panels: {
     ariaLabel: "Configuração da folha",
@@ -154,6 +155,8 @@ export const strings = {
       text: "Texto {index}",
       image: "Imagem {index}",
     },
+    imported: "Imagem “{name}” adicionada à folha.",
+    importCancelled: "Importação cancelada.",
     describe: {
       label: "{name} · {type}",
       excerpt: "{label} — “{excerpt}”",
@@ -215,6 +218,9 @@ export const strings = {
       "image.dimensions": "O lado maior passa de {maxSidePx} px. Reamostre a imagem.",
       "image.limitCount": "Máximo de {max} imagens por preset.",
       "image.lowPpi": "Resolução efetiva abaixo de {minPpi} ppi.",
+      "image.invalidFile": "O arquivo não é uma imagem que o navegador consiga abrir.",
+      "preset.limit": "Limite de modelos atingido. Apague um modelo antigo para salvar outro.",
+      "preset.invalid": "Não foi possível salvar o modelo neste navegador.",
       "text.overflow": "O texto foi cortado na caixa.",
       "text.limitCount": "Máximo de {max} caixas de texto por preset.",
       "font.loadFailed": "Não foi possível baixar a fonte. A exportação fica bloqueada.",

@@ -23,7 +23,7 @@ function clientToMm(svg, event) {
   return { x: local.x, y: local.y };
 }
 
-export function mountCanvas(host, { store, measure = null, mode = "page", onSelect = () => {} } = {}) {
+export function mountCanvas(host, { store, measure = null, mode = "page", onSelect = () => {}, images = null } = {}) {
   if (!host) throw new TypeError("mountCanvas requires a host element");
   if (!store) throw new TypeError("mountCanvas requires a store");
 
@@ -172,7 +172,7 @@ export function mountCanvas(host, { store, measure = null, mode = "page", onSele
       return;
     }
     scene = buildScene({ preset, layout, mode: viewMode, ...(measure ? { measure } : {}) });
-    const svg = mountScene(sceneLayer, scene, { label: strings.preview.ariaLabel });
+    const svg = mountScene(sceneLayer, scene, { label: strings.preview.ariaLabel, images: images ?? undefined });
     svg.removeAttribute("style");
     svg.addEventListener("pointerdown", onPointerDown);
     drawOverlay();

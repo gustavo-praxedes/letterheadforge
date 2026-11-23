@@ -3,11 +3,11 @@ import { defaultPreset } from "./core/schema.js";
 import { layoutSheet } from "./core/layout.js";
 import { buildScene } from "./core/scene.js";
 import { mountScene } from "./render/render-svg.js";
+import { createStore } from "./store/state.js";
+import { renderPanels } from "./ui/panels.js";
 
-const state = {
-  preset: defaultPreset(),
-  mode: "page",
-};
+const store = createStore(defaultPreset());
+const view = { mode: "page" };
 
 function el(id) {
   const node = document.getElementById(id);
@@ -31,35 +31,6 @@ function renderHeader() {
   document.title = `${strings.app.name} — ${strings.app.tagline}`;
 }
 
-function renderPanels() {
-  const host = el("panels");
-  host.setAttribute("aria-label", strings.panels.ariaLabel);
-  const sections = Object.entries(strings.panels.sections);
-  const nodes = sections.map(([key, label], index) => {
-    const panel = document.createElement("details");
-    panel.className = "panel";
-    panel.dataset.section = key;
-    if (index === 0) panel.open = true;
-
-    const summary = document.createElement("summary");
-    summary.className = "panel__summary";
-    const title = document.createElement("span");
-    title.textContent = label;
-    const chevron = document.createElement("span");
-    chevron.setAttribute("aria-hidden", "true");
-    chevron.textContent = "›";
-    summary.append(title, chevron);
-
-    const body = document.createElement("div");
-    body.className = "panel__body";
-    body.textContent = strings.panels.placeholder;
-
-    panel.append(summary, body);
-    return panel;
-  });
-  host.replaceChildren(...nodes);
-}
-
 function renderPreviewToolbar() {
   const host = el("preview-mode");
   host.setAttribute("aria-label", strings.preview.ariaLabel);
@@ -72,9 +43,9 @@ function renderPreviewToolbar() {
     button.className = "button";
     button.dataset.mode = mode;
     button.textContent = label;
-    button.setAttribute("aria-pressed", String(state.mode === mode));
+    button.setAttribute("aria-pressed", String(view.mode === mode));
     button.addEventListener("click", () => {
-      state.mode = mode;
+      view.mode = mode;
       renderPreviewToolbar();
       renderPreview();
     });
@@ -86,14 +57,15 @@ function renderPreviewToolbar() {
 function renderPreview() {
   const stage = el("preview-stage");
   stage.setAttribute("aria-label", strings.preview.ariaLabel);
-  const layout = layoutSheet(state.preset.page.size, state.preset.page.orientation);
+  const preset = store.getPreset();
+  const layout = layoutSheet(preset.page.size, preset.page.orientation);
   if (!layout.ok) {
     setText("preview-status", strings.warnings.catalog["invalid.contentArea"]);
     stage.replaceChildren();
     return;
   }
   const started = performance.now();
-  const scene = buildScene({ preset: state.preset, layout, mode: state.mode });
+  const scene = buildScene({ preset, layout, mode: view.mode });
   mountScene(stage, scene, { label: strings.preview.ariaLabel });
   const elapsed = performance.now() - started;
   setText("preview-status", `${strings.preview.statusReady} · ${elapsed.toFixed(0)} ms`);
@@ -105,12 +77,12 @@ function renderHint() {
 
 function main() {
   renderHeader();
-  renderPanels();
   renderPreviewToolbar();
   renderHint();
+  renderPanels(el("panels"), { store, onChange: () => renderPreview() });
   renderPreview();
 }
 
 main();
 
-export { main, state };
+export { main, store, view };

@@ -1,0 +1,173 @@
+[
+  {
+    "id": "template-a4-lined",
+    "name": "A4 pautado com moldura",
+    "preset": {
+      "schemaVersion": 1,
+      "id": "template-a4-lined",
+      "name": "A4 pautado com moldura",
+      "page": {
+        "size": "A4",
+        "orientation": "portrait",
+        "color": "#FFFFFF",
+        "margins": { "top": 15, "right": 15, "bottom": 15, "left": 15 }
+      },
+      "frame": {
+        "enabled": true,
+        "color": "#3A3A3AFF",
+        "thickness": 0.6,
+        "style": "solid",
+        "doubleGap": 2,
+        "cornerRadius": 4
+      },
+      "ruling": {
+        "enabled": true,
+        "type": "lines",
+        "color": "#C8C8C8FF",
+        "thickness": 0.25,
+        "style": "solid",
+        "dotRadius": 0.3,
+        "insets": { "top": 8, "right": 8, "bottom": 8, "left": 8 },
+        "objectDistance": 5,
+        "x": { "mode": "spacing", "spacing": 8, "count": 20 },
+        "y": { "mode": "spacing", "spacing": 8, "count": 30 }
+      },
+      "watermark": {
+        "enabled": false,
+        "kind": "text",
+        "text": {
+          "content": "",
+          "fontId": "inter",
+          "weight": 400,
+          "italic": false,
+          "sizePt": 48,
+          "color": "#000000",
+          "align": "center",
+          "lineHeight": 1.2
+        },
+        "imageId": null,
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "rotation": 0,
+        "opacity": 0.15
+      },
+      "objects": []
+    }
+  },
+  {
+    "id": "template-a5-notebook",
+    "name": "A5 caderno sem moldura",
+    "preset": {
+      "schemaVersion": 1,
+      "id": "template-a5-notebook",
+      "name": "A5 caderno sem moldura",
+      "page": {
+        "size": "A5",
+        "orientation": "portrait",
+        "color": "#FFFFFF",
+        "margins": { "top": 12, "right": 12, "bottom": 12, "left": 12 }
+      },
+      "frame": {
+        "enabled": false,
+        "color": "#3A3A3AFF",
+        "thickness": 0.5,
+        "style": "solid",
+        "doubleGap": 1,
+        "cornerRadius": 0
+      },
+      "ruling": {
+        "enabled": true,
+        "type": "lines",
+        "color": "#C8C8C8FF",
+        "thickness": 0.2,
+        "style": "solid",
+        "dotRadius": 0.3,
+        "insets": { "top": 8, "right": 8, "bottom": 8, "left": 8 },
+        "objectDistance": 5,
+        "x": { "mode": "spacing", "spacing": 9, "count": 14 },
+        "y": { "mode": "spacing", "spacing": 9, "count": 18 }
+      },
+      "watermark": {
+        "enabled": false,
+        "kind": "text",
+        "text": {
+          "content": "",
+          "fontId": "inter",
+          "weight": 400,
+          "italic": false,
+          "sizePt": 48,
+          "color": "#000000",
+          "align": "center",
+          "lineHeight": 1.2
+        },
+        "imageId": null,
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "rotation": 0,
+        "opacity": 0.15
+      },
+      "objects": []
+    }
+  },
+  {
+    "id": "template-a6-card",
+    "name": "A6 cartão sem pauta",
+    "preset": {
+      "schemaVersion": 1,
+      "id": "template-a6-card",
+      "name": "A6 cartão sem pauta",
+      "page": {
+        "size": "A6",
+        "orientation": "portrait",
+        "color": "#FFFFFF",
+        "margins": { "top": 8, "right": 8, "bottom": 8, "left": 8 }
+      },
+      "frame": {
+        "enabled": true,
+        "color": "#3A3A3AFF",
+        "thickness": 0.4,
+        "style": "solid",
+        "doubleGap": 1,
+        "cornerRadius": 3
+      },
+      "ruling": {
+        "enabled": false,
+        "type": "lines",
+        "color": "#C8C8C8FF",
+        "thickness": 0.25,
+        "style": "solid",
+        "dotRadius": 0.3,
+        "insets": { "top": 5, "right": 5, "bottom": 5, "left": 5 },
+        "objectDistance": 5,
+        "x": { "mode": "spacing", "spacing": 8, "count": 10 },
+        "y": { "mode": "spacing", "spacing": 8, "count": 14 }
+      },
+      "watermark": {
+        "enabled": false,
+        "kind": "text",
+        "text": {
+          "content": "",
+          "fontId": "inter",
+          "weight": 400,
+          "italic": false,
+          "sizePt": 48,
+          "color": "#000000",
+          "align": "center",
+          "lineHeight": 1.2
+        },
+        "imageId": null,
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "rotation": 0,
+        "opacity": 0.15
+      },
+      "objects": []
+    }
+  }
+]

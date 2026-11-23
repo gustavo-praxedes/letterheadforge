@@ -24,6 +24,43 @@ export const strings = {
       watermark: "Marca d'água",
       layers: "Objetos e camadas",
     },
+    fields: {
+      size: "Tamanho",
+      orientation: "Orientação",
+      pageColor: "Cor do papel",
+      margins: {
+        top: "Margem superior",
+        right: "Margem direita",
+        bottom: "Margem inferior",
+        left: "Margem esquerda",
+      },
+      frameEnabled: "Mostrar moldura",
+      frameColor: "Cor da moldura",
+      frameStyle: "Estilo da moldura",
+      frameThickness: "Espessura do traço",
+      frameDoubleGap: "Distância entre os traços",
+      frameCornerRadius: "Raio do canto",
+    },
+    enums: {
+      size: { A4: "A4", A5: "A5", A6: "A6" },
+      orientation: { portrait: "Retrato", landscape: "Paisagem" },
+      frameStyle: {
+        solid: "Contínua",
+        dashed: "Tracejada",
+        dotted: "Pontilhada",
+        dashdot: "Traço e ponto",
+        double: "Dupla",
+      },
+    },
+    help: {
+      pageColor: "Papéis claros gastam menos tinta e imprimem melhor.",
+      frameColor: "Aceita transparência.",
+      cornerRadius: "Ajustado automaticamente ao tamanho da moldura.",
+    },
+    messages: {
+      clamped: "Valor ajustado para {value} {unit}.",
+      invalid: "Digite um número válido.",
+    },
   },
   preview: {
     ariaLabel: "Pré-visualização da folha",

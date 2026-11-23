@@ -18,3 +18,7 @@ Limite conhecido, medido no spike T15: `fontkit.create()` lê WOFF2, mas o
 subconjunto (`subset: true`) falha em WOFF2 de Inter com
 `RangeError: Index out of range` em `TTFSubset.encode`. O projeto usa arquivos WOFF
 do Fontsource enquanto a falha existir. Ver `docs/02.01.00-DECISOES.md` §3.
+
+## Build usado
+
+`fontkit.umd.min.js` (UMD, embute pako). O build ES depende de `pako` como import externo e falha ao carregar isolado.

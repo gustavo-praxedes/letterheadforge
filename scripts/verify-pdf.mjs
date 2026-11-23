@@ -13,7 +13,8 @@ import { deflateSync } from "node:zlib";
 
 import { chromium } from "playwright";
 
-const OUT = "temp/verify";
+const BASE = process.env.BASE_URL ?? "http://localhost:8080/";
+const OUT = process.env.OUT_DIR ?? "temp/verify";
 const POPPLER = [
   join(process.env.LOCALAPPDATA ?? "", "vault-runtime", "poppler", "Library", "bin"),
   "",
@@ -140,7 +141,7 @@ const report = [];
   const browser = await chromium.launch();
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
   const page = await context.newPage();
-  await page.goto("http://localhost:8080/", { waitUntil: "load" });
+  await page.goto(BASE, { waitUntil: "load" });
   await page.waitForSelector("main");
   await page.waitForTimeout(1400);
 
@@ -200,7 +201,7 @@ const report = [];
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto("http://localhost:8080/", { waitUntil: "load" });
+  await page.goto(BASE, { waitUntil: "load" });
   await page.waitForSelector("main");
   await page.waitForTimeout(1400);
 
@@ -268,7 +269,7 @@ const report = [];
   const browser = await chromium.launch();
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
   const page = await context.newPage();
-  await page.goto("http://localhost:8080/", { waitUntil: "load" });
+  await page.goto(BASE, { waitUntil: "load" });
   await page.waitForSelector("main");
   await page.waitForTimeout(1400);
 

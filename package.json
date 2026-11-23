@@ -12,7 +12,7 @@
     "url": "https://github.com/gustavo-praxedes/letterheadforge.git"
   },
   "scripts": {
-    "test": "node --test",
+    "test": "node --test \"tests/**/*.test.js\"",
     "lint": "eslint .",
     "serve": "http-server -p 8080 -c-1",
     "shots": "node scripts/shots.mjs",

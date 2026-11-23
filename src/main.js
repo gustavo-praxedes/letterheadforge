@@ -10,6 +10,8 @@ import { fontLoader } from "./fonts/loader.js";
 import { findFont } from "./fonts/catalog.js";
 import { installShortcuts } from "./ui/shortcuts.js";
 import { createToasts } from "./ui/toasts.js";
+import { createDb } from "./store/db.js";
+import { createAutosave } from "./store/autosave.js";
 
 const store = createStore(defaultPreset());
 const measure = createMeasure();
@@ -86,6 +88,35 @@ function renderPreview() {
 
 function renderHint() {
   setText("preview-hint", strings.preview.hint);
+}
+
+async function restoreSession() {
+  let db;
+  try {
+    db = createDb();
+    await db.open();
+  } catch {
+    toasts?.warning(strings.header.storageUnavailable);
+    return null;
+  }
+
+  try {
+    const draft = await db.loadDraft();
+    if (draft?.preset) {
+      store.replace(draft.preset);
+      if (draft.selectionId) store.select(draft.selectionId);
+    }
+    const templates = await db.loadTemplates();
+    if (!templates || templates.length === 0) {
+      const response = await fetch("data/templates.json", { cache: "no-cache" });
+      if (response.ok) await db.saveTemplates(await response.json());
+    }
+  } catch {
+    toasts?.warning(strings.header.storageUnavailable);
+  }
+
+  createAutosave({ db, store });
+  return db;
 }
 
 async function preloadDefaultFont() {
@@ -174,6 +205,7 @@ function main() {
   });
   renderPreview();
   void preloadDefaultFont();
+  void restoreSession().then(() => renderPreview());
 }
 
 main();

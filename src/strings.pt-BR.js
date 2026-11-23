@@ -11,6 +11,7 @@ export const strings = {
   header: {
     presets: "Modelos",
     exportPdf: "Exportar PDF",
+    storageUnavailable: "Não foi possível guardar o rascunho neste navegador. O trabalho continua, mas não será restaurado ao recarregar.",
     exportPending: "A exportação entra no próximo marco",
   },
   panels: {

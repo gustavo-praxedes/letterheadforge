@@ -165,7 +165,7 @@ Campos obrigatórios (escreva "nenhum" quando não houver conteúdo):
 Se um campo estiver vazio, o principal pergunta ao usuário e grava a resposta aqui. Nunca presuma um valor.
 
 - **Produto:** LetterheadForge, aplicação web estática que gera PDF A4 com folhas A4, A5 ou A6 configuráveis. Repositório: `https://github.com/gustavo-praxedes/letterheadforge`.
-- **Estado:** **Marco 1 concluído e integrado em `main`** (commit `55333ee`): 12 módulos de núcleo, 139 testes verdes, lint limpo, fontes em WOFF (D11). Plano do marco 2 escrito em `docs/04.00.00-PLANO-MARCO-2.md`, aguardando aprovação do usuário. Diretrizes em `docs/01.00.00-DIRETRIZES-LETTERHEADFORGE.md`.
+- **Estado:** **Marco 1 concluído** (`55333ee`) e **Marco 2 concluído** em `main` (`4af060f`): 282 testes verdes, lint limpo. Painéis (folha, margens, pauta, marca d'água, moldura, objetos, camadas), seletor de cor, preview interativo com snap e guias, atalhos, avisos, persistência em IndexedDB e ajustes de mobile. Exportação em PDF é o Marco 3 — o botão segue desabilitado de propósito. Pendência conhecida: no mobile o preview fica longe do painel. Diretrizes em `docs/01.00.00-DIRETRIZES-LETTERHEADFORGE.md`.
 - **Instalação:** `npm ci`
 - **Build:** nenhum. Módulos ES nativos, sem etapa de build.
 - **Testes:** `npm test` (executa `node --test`)

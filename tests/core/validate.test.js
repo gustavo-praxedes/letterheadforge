@@ -42,8 +42,8 @@ test("margins are checked against the limit and the home print advisory", () => 
 test("an unusable content area is refused", () => {
   const result = validatePreset(presetWith((p) => {
     p.page.size = "A6";
-    p.page.margins.top = 50;
-    p.page.margins.bottom = 50;
+    p.page.margins.left = 50;
+    p.page.margins.right = 50;
   }));
   assert.ok(codes(result.errors).includes("invalid.contentArea"));
 });

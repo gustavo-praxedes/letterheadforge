@@ -37,8 +37,13 @@ export function createFontLoader({ fetchImpl = (...args) => fetch(...args), font
     if (!buffer.ok) return buffer;
     if (typeof fontFaceFactory !== "function") return buffer;
 
-    const family = `${font.id}-${request.weight ?? 400}-${request.style ?? "normal"}`;
-    const face = fontFaceFactory(family, buffer.buffer ?? buffer.buffer, { style: request.style ?? "normal", weight: String(request.weight ?? 400) });
+    // family = fontId so render-svg and the PDF can reference "inter" directly;
+    // weight/style travel as descriptors of the same family.
+    const family = font.id;
+    const face = fontFaceFactory(family, buffer.buffer, {
+      style: request.style ?? "normal",
+      weight: String(request.weight ?? 400),
+    });
     try {
       await face.load();
       if (typeof document !== "undefined" && document.fonts) document.fonts.add(face);

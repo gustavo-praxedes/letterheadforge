@@ -5,8 +5,12 @@ import { createStore } from "./store/state.js";
 import { renderPanels } from "./ui/panels.js";
 import { renderLayers } from "./ui/layers.js";
 import { mountCanvas } from "./ui/canvas.js";
+import { createMeasure } from "./fonts/measure.js";
+import { fontLoader } from "./fonts/loader.js";
+import { findFont } from "./fonts/catalog.js";
 
 const store = createStore(defaultPreset());
+const measure = createMeasure();
 const view = { mode: "page" };
 
 function el(id) {
@@ -68,7 +72,7 @@ function renderPreview() {
   }
   const started = performance.now();
   if (!canvas) {
-    canvas = mountCanvas(stage, { store, onSelect: () => {} });
+    canvas = mountCanvas(stage, { store, measure, onSelect: () => {} });
   } else {
     canvas.refresh();
   }
@@ -78,6 +82,23 @@ function renderPreview() {
 
 function renderHint() {
   setText("preview-hint", strings.preview.hint);
+}
+
+async function preloadDefaultFont() {
+  try {
+    const response = await fetch("data/fonts.json", { cache: "no-cache" });
+    if (!response.ok) return;
+    const catalog = await response.json();
+    const font = findFont(catalog, store.getPreset().objects?.[0]?.fontId ?? "inter");
+    if (!font) return;
+    for (const weight of [400, 700]) {
+      await fontLoader.loadFace(font, { subset: "latin", weight });
+    }
+    measure.clear();
+    if (canvas) canvas.refresh();
+  } catch {
+    // no network or no manifest: the preview falls back to a system font
+  }
 }
 
 function main() {
@@ -91,6 +112,7 @@ function main() {
     onChanged: () => renderPreview(),
   });
   renderPreview();
+  void preloadDefaultFont();
 }
 
 main();

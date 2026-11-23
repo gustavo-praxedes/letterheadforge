@@ -1,11 +1,10 @@
 import { strings } from "./strings.pt-BR.js";
 import { defaultPreset } from "./core/schema.js";
 import { layoutSheet } from "./core/layout.js";
-import { buildScene } from "./core/scene.js";
-import { mountScene } from "./render/render-svg.js";
 import { createStore } from "./store/state.js";
 import { renderPanels } from "./ui/panels.js";
 import { renderLayers } from "./ui/layers.js";
+import { mountCanvas } from "./ui/canvas.js";
 
 const store = createStore(defaultPreset());
 const view = { mode: "page" };
@@ -55,6 +54,8 @@ function renderPreviewToolbar() {
   host.replaceChildren(...buttons);
 }
 
+let canvas = null;
+
 function renderPreview() {
   const stage = el("preview-stage");
   stage.setAttribute("aria-label", strings.preview.ariaLabel);
@@ -66,8 +67,11 @@ function renderPreview() {
     return;
   }
   const started = performance.now();
-  const scene = buildScene({ preset, layout, mode: view.mode });
-  mountScene(stage, scene, { label: strings.preview.ariaLabel });
+  if (!canvas) {
+    canvas = mountCanvas(stage, { store, onSelect: () => {} });
+  } else {
+    canvas.refresh();
+  }
   const elapsed = performance.now() - started;
   setText("preview-status", `${strings.preview.statusReady} · ${elapsed.toFixed(0)} ms`);
 }

@@ -107,6 +107,7 @@ export const strings = {
     hint: "Imprima em 100% (tamanho real), sem ajustar à página.",
     statusLoading: "Montando a pré-visualização…",
     statusReady: "Pré-visualização pronta",
+    drag: "Mover objeto",
   },
   layers: {
     empty: "Nenhum objeto na folha ainda.",

@@ -45,6 +45,7 @@ export default [
         document: "readonly",
         window: "readonly",
         DOMParser: "readonly",
+        DOMPoint: "readonly",
         FontFace: "readonly",
         Image: "readonly",
         performance: "readonly",

@@ -23,7 +23,7 @@ function clientToMm(svg, event) {
   return { x: local.x, y: local.y };
 }
 
-export function mountCanvas(host, { store, measure = null, onSelect = () => {} } = {}) {
+export function mountCanvas(host, { store, measure = null, mode = "page", onSelect = () => {} } = {}) {
   if (!host) throw new TypeError("mountCanvas requires a host element");
   if (!store) throw new TypeError("mountCanvas requires a store");
 
@@ -41,6 +41,7 @@ export function mountCanvas(host, { store, measure = null, onSelect = () => {} }
   let layout = null;
   let guides = [];
   let drag = null;
+  let viewMode = mode;
 
   function currentLayout() {
     const preset = store.getPreset();
@@ -130,7 +131,7 @@ export function mountCanvas(host, { store, measure = null, onSelect = () => {} }
       overlay.replaceChildren();
       return;
     }
-    scene = buildScene({ preset, layout, mode: "page", ...(measure ? { measure } : {}) });
+    scene = buildScene({ preset, layout, mode: viewMode, ...(measure ? { measure } : {}) });
     const svg = mountScene(sceneLayer, scene, { label: strings.preview.ariaLabel });
     // An SVG without width/height attributes gets a 0x0 viewport unless CSS gives
     // it a ratio: the box would paint its background while the content vanished.
@@ -249,6 +250,12 @@ export function mountCanvas(host, { store, measure = null, onSelect = () => {} }
   return {
     node: host,
     refresh: render,
+    setMode(next) {
+      if (next && next !== viewMode) {
+        viewMode = next;
+        render();
+      }
+    },
     unsubscribe,
     getGuides: () => guides,
   };

@@ -8,10 +8,13 @@ import { mountCanvas } from "./ui/canvas.js";
 import { createMeasure } from "./fonts/measure.js";
 import { fontLoader } from "./fonts/loader.js";
 import { findFont } from "./fonts/catalog.js";
+import { installShortcuts } from "./ui/shortcuts.js";
+import { createToasts } from "./ui/toasts.js";
 
 const store = createStore(defaultPreset());
 const measure = createMeasure();
 const view = { mode: "page" };
+let toasts = null;
 
 function el(id) {
   const node = document.getElementById(id);
@@ -72,8 +75,9 @@ function renderPreview() {
   }
   const started = performance.now();
   if (!canvas) {
-    canvas = mountCanvas(stage, { store, measure, onSelect: () => {} });
+    canvas = mountCanvas(stage, { store, measure, mode: view.mode, onSelect: () => {} });
   } else {
+    canvas.setMode(view.mode);
     canvas.refresh();
   }
   const elapsed = performance.now() - started;
@@ -101,7 +105,64 @@ async function preloadDefaultFont() {
   }
 }
 
+function buildHelpDialog() {
+  const dialog = document.createElement("dialog");
+  dialog.className = "dialog dialog--shortcuts";
+  dialog.id = "shortcuts-dialog";
+
+  const title = document.createElement("h2");
+  title.className = "dialog__title";
+  title.textContent = strings.shortcuts.title;
+
+  const hint = document.createElement("p");
+  hint.className = "dialog__hint";
+  hint.textContent = strings.shortcuts.hint;
+
+  const body = document.createElement("div");
+  body.className = "dialog__groups";
+  for (const group of strings.shortcuts.groups) {
+    const section = document.createElement("section");
+    section.className = "dialog__group";
+    const heading = document.createElement("h3");
+    heading.className = "dialog__group-title";
+    heading.textContent = group.title;
+    const list = document.createElement("dl");
+    list.className = "dialog__list";
+    for (const row of group.rows) {
+      const key = document.createElement("dt");
+      key.className = "dialog__key";
+      key.textContent = row.keys;
+      const label = document.createElement("dd");
+      label.className = "dialog__label";
+      label.textContent = row.label;
+      list.append(key, label);
+    }
+    section.append(heading, list);
+    body.append(section);
+  }
+
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "button dialog__close";
+  close.textContent = strings.shortcuts.close;
+  close.addEventListener("click", () => dialog.close());
+
+  dialog.append(title, hint, body, close);
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+  document.body.append(dialog);
+  return dialog;
+}
+
 function main() {
+  toasts = createToasts(document.body);
+  const help = buildHelpDialog();
+  installShortcuts(window, {
+    store,
+    onHelp: () => help.showModal(),
+    onSave: () => toasts.info(strings.header.exportPending),
+  });
   renderHeader();
   renderPreviewToolbar();
   renderHint();

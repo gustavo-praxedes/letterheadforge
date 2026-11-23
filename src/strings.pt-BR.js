@@ -206,6 +206,32 @@ export const strings = {
       "invalid.contentArea": "As margens deixam área útil pequena demais.",
     },
   },
+  toasts: {
+    dismiss: "Fechar",
+  },
+  shortcuts: {
+    title: "Atalhos de teclado",
+    open: "Atalhos",
+    close: "Fechar",
+    hint: "Atalhos são ignorados enquanto você digita, exceto desfazer e salvar.",
+    groups: [
+      { title: "Editar", rows: [
+        { keys: "Ctrl+Z", label: "Desfazer" },
+        { keys: "Ctrl+Shift+Z", label: "Refazer" },
+        { keys: "Ctrl+D", label: "Duplicar objeto" },
+        { keys: "Ctrl+S", label: "Salvar modelo" },
+        { keys: "Delete", label: "Excluir objeto" },
+      ] },
+      { title: "Mover", rows: [
+        { keys: "Setas", label: "Mover 1 mm" },
+        { keys: "Shift+Setas", label: "Mover 10 mm" },
+        { keys: "Alt", label: "Soltar: desativa o ímã" },
+        { keys: "Shift", label: "Ao girar: passos de 15°" },
+        { keys: "Esc", label: "Limpar seleção" },
+        { keys: "?", label: "Abrir esta lista" },
+      ] },
+    ],
+  },
 };
 
 /**

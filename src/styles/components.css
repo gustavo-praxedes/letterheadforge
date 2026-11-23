@@ -564,3 +564,110 @@
   color: var(--color-disabled-text);
   cursor: not-allowed;
 }
+
+/* ---------- toasts ---------- */
+
+.toasts {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: min(28rem, calc(100vw - var(--space-6)));
+  z-index: 40;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-left-width: var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  box-shadow: var(--shadow-paper);
+}
+
+.toast--success { border-left-color: var(--color-accent); }
+.toast--warning { border-left-color: var(--color-warning); }
+.toast--error { border-left-color: var(--color-danger); }
+.toast--info { border-left-color: var(--color-text-muted); }
+
+.toast__close {
+  margin-left: auto;
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+/* ---------- shortcuts dialog ---------- */
+
+.dialog {
+  width: min(40rem, calc(100vw - var(--space-6)));
+  padding: var(--space-5);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md, var(--radius-sm));
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.dialog::backdrop {
+  background: rgb(8 21 37 / 55%);
+}
+
+.dialog__title {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-display, inherit);
+  font-size: var(--font-size-lg);
+}
+
+.dialog__hint {
+  margin: 0 0 var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.dialog__groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--space-4);
+}
+
+.dialog__group-title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.dialog__list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.dialog__key {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-weight: 600;
+}
+
+.dialog__label {
+  margin: 0;
+}
+
+.dialog__close {
+  margin-top: var(--space-5);
+}

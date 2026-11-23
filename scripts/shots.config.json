@@ -115,6 +115,37 @@
       "scale": 2
     },
     {
+      "label": "app-marca-dagua",
+      "path": "/",
+      "waitFor": "main",
+      "fullPage": true,
+      "scale": 2,
+      "settleMs": 500,
+      "actions": [
+        {
+          "type": "click",
+          "selector": "[data-section=\"watermark\"] .panel__summary"
+        },
+        {
+          "type": "wait",
+          "ms": 250
+        },
+        {
+          "type": "click",
+          "selector": "[data-field=\"watermark.enabled\"] input"
+        },
+        {
+          "type": "wait",
+          "ms": 250
+        },
+        {
+          "type": "fill",
+          "selector": "[data-field=\"watermark.text\"] textarea",
+          "value": "RASCUNHO"
+        }
+      ]
+    },
+    {
       "label": "app-moldura-mobile",
       "path": "/",
       "viewport": "mobile",
@@ -177,6 +208,23 @@
         }
       ],
       "scale": 2
+    },
+    {
+      "label": "app-atalhos",
+      "path": "/",
+      "waitFor": "main",
+      "fullPage": false,
+      "settleMs": 400,
+      "actions": [
+        {
+          "type": "click",
+          "selector": "body"
+        },
+        {
+          "type": "press",
+          "key": "?"
+        }
+      ]
     }
   ]
 }

@@ -1,6 +1,7 @@
 import { strings, warningText } from "./strings.pt-BR.js";
 import { defaultPreset } from "./core/schema.js";
 import { validatePreset } from "./core/validate.js";
+import { fitObjectsToPage as fitObjectsToPageGeometry } from "./core/fit-page.js";
 import { layoutSheet } from "./core/layout.js";
 import { createStore } from "./store/state.js";
 import { renderPanels } from "./ui/panels.js";
@@ -26,6 +27,8 @@ let toasts = null;
 let db = null;
 /** Running export job (spec 8.2): kept so the cancel button can terminate it. */
 let exportJob = null;
+/** Page geometry of the last render, used to keep objects inside when it changes. */
+let pageGeometry = null;
 let fontCatalog = null;
 /** imageId -> object URL, so the renderer can point an <image> at the bytes. */
 const imageUrls = new Map();
@@ -107,6 +110,29 @@ function renderWarnings(list) {
   }
   host.replaceChildren(...items);
   host.toggleAttribute("data-empty", items.length === 0);
+}
+
+/**
+ * A4 → A5 shrinks the page from 210 × 297 mm to 148 × 210 mm. Objects keep their
+ * millimetre position, so a box near the old bottom edge would fall outside the
+ * new page and vanish. Positions follow the page proportionally; sizes are only
+ * capped. Free placement outside the page stays allowed afterwards (spec R75).
+ */
+function fitObjectsToPage(preset) {
+  const layout = layoutSheet(preset.page.size, preset.page.orientation);
+  if (!layout.ok) return false;
+  const next = { w: layout.cells[0].w, h: layout.cells[0].h };
+  const previous = pageGeometry;
+  pageGeometry = next;
+  if (!previous || (previous.w === next.w && previous.h === next.h)) return false;
+  const objects = preset.objects ?? [];
+  if (objects.length === 0) return false;
+
+  const fitted = fitObjectsToPageGeometry(objects, previous, next);
+  store.update((draft) => {
+    draft.objects = fitted;
+  }, { tag: "fit-page", label: strings.preview.fitPage });
+  return true;
 }
 
 function renderPreview() {
@@ -602,7 +628,10 @@ function main() {
   renderHint();
   renderPanels(el("panels"), {
     store,
-    onChange: () => renderPreview(),
+    onChange: (preset) => {
+      if (fitObjectsToPage(preset ?? store.getPreset())) return; // the store update re-renders
+      renderPreview();
+    },
     onRequestImage: () => requestImage(),
     colors: {
       recents: () => recentColors,

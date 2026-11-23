@@ -20,7 +20,8 @@
     "manifest:fonts": "node scripts/build-fonts-manifest.mjs",
     "release": "commit-and-tag-version",
     "manifest:templates": "node scripts/build-templates.mjs",
-    "verify:pdf": "node scripts/verify-pdf.mjs"
+    "verify:pdf": "node scripts/verify-pdf.mjs",
+    "verify:ui": "node scripts/verify-ui.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

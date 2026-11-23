@@ -174,7 +174,6 @@ export function mountCanvas(host, { store, measure = null, mode = "page", onSele
     scene = buildScene({ preset, layout, mode: viewMode, ...(measure ? { measure } : {}) });
     const svg = mountScene(sceneLayer, scene, { label: strings.preview.ariaLabel, images: images ?? undefined });
     svg.removeAttribute("style");
-    svg.addEventListener("pointerdown", onPointerDown);
     drawOverlay();
     fitToStage();
     if (typeof onWarnings === "function") onWarnings(scene.warnings ?? []);
@@ -219,18 +218,22 @@ export function mountCanvas(host, { store, measure = null, mode = "page", onSele
       object: { ...target },
       moved: false,
     };
-    svg.setPointerCapture?.(event.pointerId);
+    // Every drag step re-renders the sheet, and the SVG element is replaced each
+    // time. Listeners therefore live on the frame — the one node that survives.
+    frame.setPointerCapture?.(event.pointerId);
     event.preventDefault();
 
-    const move = (moveEvent) => onPointerMove(moveEvent, svg);
-    const up = (upEvent) => onPointerUp(upEvent, svg, move, up);
-    svg.addEventListener("pointermove", move);
-    svg.addEventListener("pointerup", up, { once: true });
-    svg.addEventListener("pointercancel", up, { once: true });
+    const move = (moveEvent) => onPointerMove(moveEvent);
+    const up = (upEvent) => onPointerUp(upEvent, move, up);
+    frame.addEventListener("pointermove", move);
+    frame.addEventListener("pointerup", up, { once: true });
+    frame.addEventListener("pointercancel", up, { once: true });
   }
 
-  function onPointerMove(event, svg) {
+  function onPointerMove(event) {
     if (!drag) return;
+    const svg = sceneLayer.querySelector("svg");
+    if (!svg) return;
     const point = clientToMm(svg, event);
     const snap = event.altKey !== true;
     const aspect = event.shiftKey === true && drag.handle !== "move";
@@ -267,13 +270,14 @@ export function mountCanvas(host, { store, measure = null, mode = "page", onSele
     render();
   }
 
-  function onPointerUp(_event, svg, move, up) {
-    svg.removeEventListener("pointermove", move);
-    svg.removeEventListener("pointerup", up);
-    svg.removeEventListener("pointercancel", up);
+  function onPointerUp(_event, move, up) {
+    frame.removeEventListener("pointermove", move);
+    frame.removeEventListener("pointerup", up);
+    frame.removeEventListener("pointercancel", up);
     drag = null;
     guides = [];
-    svg.style.cursor = "";
+    const svg = sceneLayer.querySelector("svg");
+    if (svg) svg.style.cursor = "";
     drawOverlay();
   }
 
@@ -282,6 +286,9 @@ export function mountCanvas(host, { store, measure = null, mode = "page", onSele
     drawOverlay();
   }
 
+  // One listener for the whole canvas: the sheet SVG is recreated on every
+  // edit, so binding the pointer to it would drop the drag mid-gesture.
+  frame.addEventListener("pointerdown", onPointerDown);
   render();
 
   const observer = typeof ResizeObserver === "function" ? new ResizeObserver(() => fitToStage()) : null;

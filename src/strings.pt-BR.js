@@ -133,6 +133,7 @@ export const strings = {
     statusLoading: "Montando a pré-visualização…",
     statusReady: "Pré-visualização pronta",
     drag: "Mover objeto",
+    fitPage: "Ajuste à página",
   },
   layers: {
     empty: "Nenhum objeto na folha ainda.",

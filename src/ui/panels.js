@@ -581,8 +581,18 @@ function actionField(id, label, gate) {
   };
 }
 
+/**
+ * When a section is built before the catalogue arrives (or with an empty list),
+ * fall back to the module cache — otherwise the select shows only the current
+ * font id, which is what made the watermark offer just "inter".
+ */
+function catalogueFor(fonts) {
+  if (Array.isArray(fonts) && fonts.length > 0) return fonts;
+  return Array.isArray(fontCatalogue) && fontCatalogue.length > 0 ? fontCatalogue : [];
+}
+
 function fontOptions(object, fonts) {
-  const list = Array.isArray(fonts) && fonts.length > 0 ? fonts : null;
+  const list = catalogueFor(fonts).length > 0 ? catalogueFor(fonts) : null;
   if (!list) return [{ value: String(object.fontId), label: String(object.fontId) }];
   const options = list.map((font) => ({ value: String(font.id), label: font.family ?? String(font.id) }));
   if (!options.some((option) => option.value === String(object.fontId))) {
@@ -592,7 +602,7 @@ function fontOptions(object, fonts) {
 }
 
 function weightOptions(object, fonts) {
-  const font = (Array.isArray(fonts) ? fonts : []).find((entry) => entry.id === object.fontId);
+  const font = catalogueFor(fonts).find((entry) => entry.id === object.fontId);
   const weights = Array.isArray(font?.weights) && font.weights.length > 0 ? font.weights : [object.weight];
   const options = weights
     .filter((weight) => typeof weight === "number" && Number.isFinite(weight))
@@ -1148,7 +1158,15 @@ function sectionNode(key, label, fields, store, open) {
   };
 
   apply(fields);
-  return { panel, apply };
+  return {
+    panel,
+    apply,
+    // The signature only tracks field ids, so a change in the *options* (the font
+    // catalogue arriving) needs an explicit invalidation to rebuild the controls.
+    invalidate() {
+      signature = null;
+    },
+  };
 }
 
 /**
@@ -1399,7 +1417,9 @@ export function renderPanels(host, { store, onChange, onRequestImage = null, col
     if (!Array.isArray(list) || list.length === 0 || list.length === fonts.length) return;
     fonts = list;
     const watermark = mounts.find((mount) => mount.key === "watermark");
-    if (watermark) watermark.mounted.apply(watermark.build(store.getPreset()));
+    if (!watermark) return;
+    watermark.mounted.invalidate();
+    watermark.mounted.apply(watermark.build(store.getPreset()));
   });
 
   return { unsubscribe, sync, objects };

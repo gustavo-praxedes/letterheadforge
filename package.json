@@ -19,7 +19,8 @@
     "spike:woff2": "node scripts/spike-woff2.mjs",
     "manifest:fonts": "node scripts/build-fonts-manifest.mjs",
     "release": "commit-and-tag-version",
-    "manifest:templates": "node scripts/build-templates.mjs"
+    "manifest:templates": "node scripts/build-templates.mjs",
+    "verify:pdf": "node scripts/verify-pdf.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

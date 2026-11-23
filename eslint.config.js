@@ -66,6 +66,32 @@ export default [
     },
   },
   {
+    // The PDF worker runs in a worker scope: no `document`, but `self` and the
+    // canvas APIs it uses to re-encode WebP.
+    files: ["src/pdf/worker.js"],
+    languageOptions: {
+      globals: {
+        self: "readonly",
+        OffscreenCanvas: "readonly",
+        createImageBitmap: "readonly",
+        Blob: "readonly",
+        performance: "readonly",
+      },
+    },
+  },
+  {
+    // The Playwright scripts carry `page.evaluate` callbacks that run in the
+    // browser, so they legitimately reference DOM globals.
+    files: ["scripts/**/*.mjs"],
+    languageOptions: {
+      globals: {
+        document: "readonly",
+        window: "readonly",
+        MutationObserver: "readonly",
+      },
+    },
+  },
+  {
     files: ["tests/**/*.js", "scripts/**/*.mjs"],
     rules: {
       "no-console": "off",

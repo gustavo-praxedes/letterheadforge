@@ -1,5 +1,6 @@
 import { strings, warningText } from "./strings.pt-BR.js";
 import { defaultPreset } from "./core/schema.js";
+import { validatePreset } from "./core/validate.js";
 import { layoutSheet } from "./core/layout.js";
 import { createStore } from "./store/state.js";
 import { renderPanels } from "./ui/panels.js";
@@ -14,12 +15,18 @@ import { createDb } from "./store/db.js";
 import { createAutosave } from "./store/autosave.js";
 import { addImage, fitImageInPage, validateImageFile } from "./ui/objects.js";
 import { limits } from "./config.js";
+import { buildScene } from "./core/scene.js";
+import { downloadPdf, startExport } from "./pdf/export.js";
+import { fontKey } from "./pdf/validate.js";
 
 const store = createStore(defaultPreset());
 const measure = createMeasure();
 const view = { mode: "page" };
 let toasts = null;
 let db = null;
+/** Running export job (spec 8.2): kept so the cancel button can terminate it. */
+let exportJob = null;
+let fontCatalog = null;
 /** imageId -> object URL, so the renderer can point an <image> at the bytes. */
 const imageUrls = new Map();
 /** Palette (data/palette.json) and the last colours, kept in IndexedDB settings. */
@@ -43,8 +50,12 @@ function renderHeader() {
   presetButton.textContent = strings.header.presets;
   const exportButton = el("export-pdf");
   exportButton.textContent = strings.header.exportPdf;
-  exportButton.title = strings.header.exportPending;
-  exportButton.setAttribute("aria-description", strings.header.exportPending);
+  exportButton.title = strings.header.exportPdf;
+  const cancelButton = el("export-cancel");
+  cancelButton.textContent = strings.header.exportCancel;
+  cancelButton.addEventListener("click", () => {
+    exportJob?.cancel();
+  });
   document.title = `${strings.app.name} — ${strings.app.tagline}`;
 }
 
@@ -128,6 +139,135 @@ function renderPreview() {
 
 function renderHint() {
   setText("preview-hint", strings.preview.hint);
+}
+
+/**
+ * Export (spec 8.2): validates, loads the fonts the scene actually uses, reads
+ * the image bytes from IndexedDB and hands everything to the PDF worker.
+ */
+async function runExport() {
+  if (exportJob) return;
+  const button = el("export-pdf");
+  const cancel = el("export-cancel");
+  const preset = store.getPreset();
+  const layout = layoutSheet(preset.page.size, preset.page.orientation);
+  if (!layout.ok) {
+    toasts?.error(warningText("invalid.contentArea"));
+    return;
+  }
+
+  const scene = buildScene({ preset, layout, mode: "sheet", measure, alphaMasks: new Map() });
+  const fonts = await loadSceneFonts(scene);
+  if (!fonts) return; // a falta de fonte já foi avisada
+
+  const images = await loadSceneImages(scene);
+  const setBusy = (busy, label = "") => {
+    button.disabled = busy;
+    button.textContent = busy ? label : strings.header.exportPdf;
+    button.setAttribute("aria-busy", busy ? "true" : "false");
+    cancel.hidden = !busy;
+  };
+
+  exportJob = startExport({
+    scene,
+    preset,
+    fonts,
+    images,
+    version: "0.1.0",
+    validatePreset,
+    limits,
+    workerFactory: () => new Worker(new URL("./pdf/worker.js", import.meta.url), { type: "module" }),
+    onProgress: ({ label, index, total }) => {
+      const percent = total > 0 ? Math.round((index / total) * 100) : 0;
+      setBusy(true, `${label} ${percent}%`);
+    },
+    onDone: (bytes, name) => {
+      const written = downloadPdf(bytes, name);
+      toasts?.success(strings.header.exported.replace("{size}", String(Math.max(1, Math.round(written.size / 1024)))));
+      setBusy(false);
+      exportJob = null;
+    },
+    onError: (error) => {
+      setBusy(false);
+      exportJob = null;
+      if (error.code === "export.cancelled") {
+        toasts?.warning(strings.header.exportCancelled);
+        return;
+      }
+      toasts?.error(warningText(error.code, error.params));
+    },
+  });
+  await exportJob.promise;
+}
+
+/** Fonts referenced by the scene, loaded as raw buffers for the PDF worker. */
+async function loadSceneFonts(scene) {
+  const keys = new Set();
+  const walk = (primitives) => {
+    for (const primitive of primitives ?? []) {
+      if (primitive?.kind === "text") keys.add(fontKey(primitive));
+      walk(primitive?.children);
+    }
+  };
+  walk(scene.primitives);
+  if (keys.size === 0) return new Map();
+
+  const catalog = await loadCatalog();
+  const fonts = new Map();
+  for (const key of keys) {
+    const [fontId, weightText, style] = key.split(":");
+    const font = catalog ? findFont(catalog, fontId) : null;
+    if (!font) {
+      toasts?.error(warningText("font.loadFailed"));
+      return null;
+    }
+    const loaded = await fontLoader.loadBuffer(font, {
+      subset: "latin",
+      weight: Number(weightText) || 400,
+      italic: style === "italic",
+    });
+    if (!loaded.ok) {
+      toasts?.error(warningText(loaded.code ?? "font.loadFailed", loaded.params));
+      return null;
+    }
+    fonts.set(key, { bytes: loaded.buffer });
+  }
+  return fonts;
+}
+
+async function loadCatalog() {
+  if (fontCatalog) return fontCatalog;
+  try {
+    const response = await fetch("data/fonts.json", { cache: "no-cache" });
+    if (!response.ok) return null;
+    fontCatalog = await response.json();
+    return fontCatalog;
+  } catch {
+    return null;
+  }
+}
+
+/** Image bytes for the scene, straight from IndexedDB (R47: no recompression). */
+async function loadSceneImages(scene) {
+  const ids = new Set();
+  const walk = (primitives) => {
+    for (const primitive of primitives ?? []) {
+      if (primitive?.kind === "image" && primitive.imageId) ids.add(primitive.imageId);
+      walk(primitive?.children);
+    }
+  };
+  walk(scene.primitives);
+  const images = new Map();
+  if (!db) return images;
+  for (const id of ids) {
+    const record = await db.getImage(id).catch(() => null);
+    // The store keeps a Blob; the PDF needs the bytes themselves. `record.bytes`
+    // is the size in bytes, not the payload.
+    if (!record?.blob) continue;
+    const bytes = new Uint8Array(await record.blob.arrayBuffer());
+    images.set(id, { bytes, type: record.type ?? record.blob.type ?? "image/png" });
+  }
+  return images;
 }
 
 async function restoreColors() {
@@ -475,6 +615,7 @@ function main() {
     getLayout: () => layoutSheet(store.getPreset().page.size, store.getPreset().page.orientation),
     onChanged: () => renderPreview(),
   });
+  el("export-pdf").addEventListener("click", () => void runExport());
   renderPreview();
   void preloadDefaultFont();
   void restoreSession().then(() => renderPreview());

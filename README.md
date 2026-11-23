@@ -4,6 +4,9 @@
 
 **No ar:** https://gustavo-praxedes.github.io/letterheadforge/
 
+Gera o PDF A4 no próprio navegador: 1 página A4, 2 páginas A5 ou 4 páginas A6, vetorial, com fontes embarcadas
+em subconjunto e texto selecionável. Nenhum arquivo sai do computador.
+
 Aplicação web estática que gera um PDF A4 para impressão doméstica, com 1 página A4, 2 páginas A5 ou 4 páginas A6 — todas com a mesma configuração de pauta, moldura, marca d'água, imagens e caixas de texto.
 
 - Especificação: [`docs/02.00.00-ESPECIFICACOES.md`](docs/02.00.00-ESPECIFICACOES.md) · Plano do marco 1: [`docs/03.00.00-PLANO-MARCO-1.md`](docs/03.00.00-PLANO-MARCO-1.md) · Contratos do núcleo: [`docs/03.01.00-CONTRATOS-NUCLEO-M1.md`](docs/03.01.00-CONTRATOS-NUCLEO-M1.md)

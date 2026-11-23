@@ -1,0 +1,30 @@
+{
+  "name": "letterheadforge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Static web app that generates a printable A4 PDF with configurable A4, A5 or A6 sheets",
+  "license": "MIT",
+  "author": "Gustavo Praxedes",
+  "homepage": "https://gustavo-praxedes.github.io/letterheadforge/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gustavo-praxedes/letterheadforge.git"
+  },
+  "scripts": {
+    "test": "node --test",
+    "lint": "eslint .",
+    "serve": "http-server -p 8080 -c-1",
+    "shots": "node scripts/shots.mjs",
+    "spike:woff2": "node scripts/spike-woff2.mjs",
+    "manifest:fonts": "node scripts/build-fonts-manifest.mjs",
+    "release": "commit-and-tag-version"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "commit-and-tag-version": "^13.3.0",
+    "eslint": "^10.15.0",
+    "http-server": "^14.1.1",
+    "playwright": "^1.65.1"
+  }
+}

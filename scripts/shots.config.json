@@ -1,0 +1,17 @@
+{
+  "shots": [
+    {
+      "label": "app-inicial",
+      "path": "/",
+      "waitFor": "main",
+      "fullPage": true
+    },
+    {
+      "label": "app-inicial-mobile",
+      "path": "/",
+      "viewport": "mobile",
+      "waitFor": "main",
+      "fullPage": true
+    }
+  ]
+}

@@ -165,7 +165,7 @@ Campos obrigatórios (escreva "nenhum" quando não houver conteúdo):
 Se um campo estiver vazio, o principal pergunta ao usuário e grava a resposta aqui. Nunca presuma um valor.
 
 - **Produto:** LetterheadForge, aplicação web estática que gera PDF A4 com folhas A4, A5 ou A6 configuráveis. Repositório: `https://github.com/gustavo-praxedes/letterheadforge`.
-- **Estado:** spec (`docs/02.00.00-ESPECIFICACOES.md`, v0.1.0) e plano do marco 1 (`docs/03.00.00-PLANO-MARCO-1.md`) **aprovados pelo usuário em 2026-11-23**. Diretrizes em `docs/01.00.00-DIRETRIZES-LETTERHEADFORGE.md`. Marco 1 em execução.
+- **Estado:** **Marco 1 concluído e integrado em `main`** (commit `55333ee`): 12 módulos de núcleo, 139 testes verdes, lint limpo, fontes em WOFF (D11). Plano do marco 2 escrito em `docs/04.00.00-PLANO-MARCO-2.md`, aguardando aprovação do usuário. Diretrizes em `docs/01.00.00-DIRETRIZES-LETTERHEADFORGE.md`.
 - **Instalação:** `npm ci`
 - **Build:** nenhum. Módulos ES nativos, sem etapa de build.
 - **Testes:** `npm test` (executa `node --test`)
@@ -177,7 +177,7 @@ Se um campo estiver vazio, o principal pergunta ao usuário e grava a resposta a
 - **Branch principal:** `main`
 - **Idioma do código e dos commits:** inglês. Commits em Conventional Commits. Documentação em pt-BR.
 - **Ferramentas:** herdr 0.9.5 (`https://herdr.dev/install.ps1`). Uso neste projeto: bancada de execução — workspace `letterheadforge` com `--cwd E:/LETTERHEADFORGE`, panes para `npm test`, `npm run lint` e `npm run shots`. Sessão nomeada `lhf`; todo comando leva `--session lhf`. herdr **não** substitui as branches e worktrees da seção 5: cada executor continua dono do próprio worktree e da própria branch.
-- **Leitura obrigatória:** `docs/02.00.00-ESPECIFICACOES.md`; o plano em vigor (`docs/03.00.00-PLANO-MARCO-1.md`); `docs/03.01.00-CONTRATOS-NUCLEO-M1.md` (no Marco 1); `README.md`.
+- **Leitura obrigatória:** `docs/02.00.00-ESPECIFICACOES.md`; o plano em vigor (`docs/04.00.00-PLANO-MARCO-2.md`, quando aprovado; senão `docs/03.00.00-PLANO-MARCO-1.md`); `docs/03.01.00-CONTRATOS-NUCLEO-M1.md` (contratos do núcleo); `docs/01.01.00-AGENTE-REVISAO-VISUAL.md`; `README.md`.
 - **Verificações adicionais:**
   - `grep -rnE "window|document|fetch" src/core src/store/history.js` não retorna ocorrências (núcleo puro).
   - Nenhum número de regra, texto de interface ou cor fixos fora de `src/config.js`, `src/strings.pt-BR.js`, `src/styles/tokens.css` e `data/` (revisão registrada no checklist da tarefa).

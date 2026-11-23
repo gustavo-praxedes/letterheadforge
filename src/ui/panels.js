@@ -68,7 +68,20 @@ function selectOptions(kind, group) {
 }
 
 /** Number field; every limit comes from config.js. */
-function numberField({ id, path, label, value, min, max, step = NUMBER_STEP, unit, help = null, warning = null, disabled = false }) {
+function numberField({
+  id,
+  path,
+  label,
+  value,
+  min,
+  max,
+  step = NUMBER_STEP,
+  unit,
+  help = null,
+  warning = null,
+  disabled = false,
+  toModel = null,
+}) {
   return {
     id,
     type: "number",
@@ -82,6 +95,7 @@ function numberField({ id, path, label, value, min, max, step = NUMBER_STEP, uni
     help,
     warning,
     disabled,
+    toModel,
   };
 }
 
@@ -357,6 +371,178 @@ export function rulingSection(preset) {
       }),
     ),
   ];
+}
+
+const IMAGE_MISSING_CODE = "watermark.imageMissing";
+
+/**
+ * Marca d'água: on/off, kind and the fields of the chosen mode.
+ *
+ * The two modes do not coexist: text fields are absent in image mode and the
+ * image select is absent in text mode, so the panel never shows a control that
+ * the model ignores. `fonts` comes from `data/fonts.json` and `images` from the
+ * store's image map; without a catalogue the font select still shows the font
+ * the watermark already uses.
+ */
+export function watermarkSection(preset, { fonts = [], images = [] } = {}) {
+  const watermark = preset?.watermark ?? {};
+  const text = watermark.text ?? {};
+  const on = watermark.enabled === true;
+  const isImage = watermark.kind === "image";
+
+  const fields = [
+    checkboxField({
+      id: "watermark.enabled",
+      path: "watermark.enabled",
+      label: strings.panels.fields.watermarkEnabled,
+      value: watermark.enabled,
+    }),
+    selectField({
+      id: "watermark.kind",
+      path: "watermark.kind",
+      label: strings.panels.fields.watermarkKind,
+      value: watermark.kind,
+      kind: "watermarkKind",
+      group: "watermarkKinds",
+      disabled: !on,
+    }),
+  ];
+
+  if (isImage) {
+    const hasImages = Array.isArray(images) && images.length > 0;
+    const available = imageOptions(images, watermark.imageId);
+    fields.push({
+      id: "watermark.imageId",
+      type: "select",
+      path: "watermark.imageId",
+      label: strings.panels.fields.watermarkImage,
+      options: available,
+      value: watermark.imageId ?? "",
+      help: hasImages ? null : strings.panels.help.watermarkImage,
+      warning:
+        on && !hasImages ? { code: IMAGE_MISSING_CODE, message: warningText(IMAGE_MISSING_CODE) } : null,
+      disabled: !on || !hasImages,
+      toModel: (value) => (value === "" ? null : value),
+    });
+  } else {
+    fields.push(
+      {
+        id: "watermark.text",
+        type: "textarea",
+        path: "watermark.text.content",
+        label: strings.panels.fields.watermarkText,
+        value: typeof text.content === "string" ? text.content : "",
+        help: strings.panels.help.watermarkText,
+        disabled: !on,
+      },
+      {
+        id: "watermark.fontId",
+        type: "select",
+        path: "watermark.text.fontId",
+        label: strings.panels.fields.watermarkFont,
+        options: fontOptions(text, fonts),
+        value: String(text.fontId),
+        help: null,
+        disabled: !on,
+      },
+      numberField({
+        id: "watermark.sizePt",
+        path: "watermark.text.sizePt",
+        label: strings.panels.fields.watermarkSize,
+        value: text.sizePt,
+        min: limits.textSizePt.min,
+        max: limits.textSizePt.max,
+        step: 1,
+        unit: strings.units.point,
+        help: fillMessage(strings.panels.help.watermarkSize, {
+          min: limits.textSizePt.min,
+          max: limits.textSizePt.max,
+        }),
+        disabled: !on,
+      }),
+      {
+        id: "watermark.weight",
+        type: "select",
+        path: "watermark.text.weight",
+        label: strings.panels.fields.watermarkWeight,
+        options: weightOptions(text, fonts),
+        value: String(text.weight),
+        help: null,
+        disabled: !on,
+      },
+      {
+        id: "watermark.italic",
+        type: "checkbox",
+        path: "watermark.text.italic",
+        label: strings.panels.fields.watermarkItalic,
+        value: text.italic === true,
+        help: null,
+        disabled: !on,
+      },
+      colorField({
+        id: "watermark.color",
+        path: "watermark.text.color",
+        label: strings.panels.fields.watermarkColor,
+        value: text.color,
+        disabled: !on,
+      }),
+    );
+  }
+
+  fields.push(
+    numberField({
+      id: "watermark.opacity",
+      path: "watermark.opacity",
+      label: strings.panels.fields.watermarkOpacity,
+      // The model stores a 0–1 fraction; the panel always shows a percentage.
+      value: percentOf(watermark.opacity),
+      min: limits.opacity.min * 100,
+      max: limits.opacity.max * 100,
+      step: 1,
+      unit: strings.units.percentage,
+      help: strings.panels.help.watermarkOpacity,
+      disabled: !on,
+      toModel: (value) => clamp(value / 100, limits.opacity.min, limits.opacity.max),
+    }),
+    numberField({
+      id: "watermark.rotation",
+      path: "watermark.rotation",
+      label: strings.panels.fields.watermarkRotation,
+      value: watermark.rotation,
+      min: limits.rotation.min,
+      max: limits.rotation.max,
+      unit: strings.units.degree,
+      disabled: !on,
+    }),
+  );
+
+  return fields;
+}
+
+/** 0–1 fraction to a 0–100 percentage, rounded to one decimal. */
+function percentOf(fraction) {
+  if (typeof fraction !== "number" || !Number.isFinite(fraction)) return 0;
+  return Math.round(fraction * 1000) / 10;
+}
+
+/** Image options from the store map; a missing current id is kept selectable. */
+function imageOptions(images, current) {
+  const list = Array.isArray(images) ? images : [];
+  const options = list
+    .map((entry) => {
+      const id = typeof entry === "string" ? entry : entry?.id;
+      const name = typeof entry === "string" ? entry : (entry?.name ?? entry?.id);
+      if (id === null || id === undefined) return null;
+      return { value: String(id), label: String(name) };
+    })
+    .filter(Boolean);
+  if (current !== null && current !== undefined && !options.some((option) => option.value === String(current))) {
+    options.unshift({ value: String(current), label: String(current) });
+  }
+  if (options.length === 0) {
+    options.push({ value: "", label: strings.panels.messages.watermarkNoImage });
+  }
+  return options;
 }
 
 /** All descriptors, in display order. */
@@ -762,7 +948,8 @@ function buildField(field, store, { commit: commitOverride = null } = {}) {
   const commit =
     commitOverride ??
     ((value) => {
-      store.update((draft) => writePath(draft, field.path, value), {
+      const stored = typeof field.toModel === "function" ? field.toModel(value) : value;
+      store.update((draft) => writePath(draft, field.path, stored), {
         tag: field.id,
         label: field.label,
       });
@@ -923,11 +1110,29 @@ function sectionNode(key, label, fields, store, open) {
 
   const body = document.createElement("div");
   body.className = "panel__body panel__body--fields";
-  const builders = fields.map((field) => ({ field, ...buildField(field, store) }));
-  body.append(...builders.map((builder) => builder.node));
 
   panel.append(summary, body);
-  return { panel, builders };
+
+  let builders = [];
+  let signature = null;
+
+  // A section whose field list depends on the preset (the watermark text and
+  // image modes) has to rebuild its controls when the ids change; otherwise a
+  // plain re-sync is enough and keeps focus and popovers alive.
+  const apply = (next) => {
+    const nextSignature = next.map((field) => field.id).join("|");
+    if (nextSignature !== signature) {
+      signature = nextSignature;
+      builders.forEach((builder) => builder.colorControl?.destroy());
+      builders = next.map((field) => ({ field, ...buildField(field, store) }));
+      body.replaceChildren(...builders.map((builder) => builder.node));
+      return;
+    }
+    builders.forEach((builder, index) => builder.apply(next[index]));
+  };
+
+  apply(fields);
+  return { panel, apply };
 }
 
 /**
@@ -1112,17 +1317,32 @@ export function renderPanels(host, { store, onChange } = {}) {
 
   host.replaceChildren();
 
+  let fonts = [];
+  const images = () =>
+    typeof store.listImages === "function"
+      ? store.listImages().map((id) => {
+          const image = typeof store.getImage === "function" ? store.getImage(id) : null;
+          return { id, name: typeof image?.name === "string" ? image.name : id };
+        })
+      : [];
+
   const sections = [
-    { key: "page", label: strings.panels.sections.page, build: pageSection, open: true },
-    { key: "margins", label: strings.panels.sections.margins, build: marginsSection, open: true },
-    { key: "ruling", label: strings.panels.sections.ruling, build: rulingSection, open: false },
-    { key: "frame", label: strings.panels.sections.frame, build: frameSection, open: false },
+    { key: "page", label: strings.panels.sections.page, build: (preset) => pageSection(preset), open: true },
+    { key: "margins", label: strings.panels.sections.margins, build: (preset) => marginsSection(preset), open: true },
+    { key: "ruling", label: strings.panels.sections.ruling, build: (preset) => rulingSection(preset), open: false },
+    {
+      key: "watermark",
+      label: strings.panels.sections.watermark,
+      build: (preset) => watermarkSection(preset, { fonts, images: images() }),
+      open: false,
+    },
+    { key: "frame", label: strings.panels.sections.frame, build: (preset) => frameSection(preset), open: false },
   ];
 
   const mounts = sections.map(({ key, label, build, open }) => {
     const mounted = sectionNode(key, label, build(store.getPreset()), store, open);
     host.append(mounted.panel);
-    return { key, build, builders: mounted.builders };
+    return { key, build, mounted };
   });
 
   // Last section of this host: the layers panel is mounted after it by main.js.
@@ -1130,10 +1350,7 @@ export function renderPanels(host, { store, onChange } = {}) {
   host.append(objects.node);
 
   const sync = (preset) => {
-    for (const { build, builders } of mounts) {
-      const next = build(preset);
-      builders.forEach((builder, index) => builder.apply(next[index]));
-    }
+    for (const { build, mounted } of mounts) mounted.apply(build(preset));
     objects.render();
   };
 
@@ -1142,9 +1359,23 @@ export function renderPanels(host, { store, onChange } = {}) {
       objects.render();
       return;
     }
+    if (event.type === "images") {
+      const watermark = mounts.find((mount) => mount.key === "watermark");
+      if (watermark) watermark.mounted.apply(watermark.build(store.getPreset()));
+      return;
+    }
     if (event.type !== "change") return;
     sync(event.preset);
     if (typeof onChange === "function") onChange(event.preset, event);
+  });
+
+  // The font catalogue arrives after the panels exist: refresh the watermark
+  // font and weight selects once it is there.
+  loadFontCatalogue().then((list) => {
+    if (!Array.isArray(list) || list.length === 0 || list.length === fonts.length) return;
+    fonts = list;
+    const watermark = mounts.find((mount) => mount.key === "watermark");
+    if (watermark) watermark.mounted.apply(watermark.build(store.getPreset()));
   });
 
   return { unsubscribe, sync, objects };

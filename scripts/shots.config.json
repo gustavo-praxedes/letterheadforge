@@ -12,6 +12,43 @@
       "viewport": "mobile",
       "waitFor": "main",
       "fullPage": true
+    },
+    {
+      "label": "app-moldura-aberta",
+      "path": "/",
+      "waitFor": "main",
+      "fullPage": true,
+      "actions": [
+        {
+          "type": "click",
+          "selector": "[data-section=\"frame\"] .panel__summary"
+        }
+      ]
+    },
+    {
+      "label": "app-seletor-cor",
+      "path": "/",
+      "waitFor": "main",
+      "fullPage": true,
+      "actions": [
+        {
+          "type": "click",
+          "selector": "#panel-field-page-color"
+        }
+      ]
+    },
+    {
+      "label": "app-moldura-mobile",
+      "path": "/",
+      "viewport": "mobile",
+      "waitFor": "main",
+      "fullPage": true,
+      "actions": [
+        {
+          "type": "click",
+          "selector": "[data-section=\"frame\"] .panel__summary"
+        }
+      ]
     }
   ]
 }

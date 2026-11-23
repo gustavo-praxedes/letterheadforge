@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; font-src https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: blob:; worker-src 'self' blob:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>LetterheadForge</title>
+    <link rel="stylesheet" href="src/styles/tokens.css" />
+    <link rel="stylesheet" href="src/styles/base.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="app-header__brand">
+        <h1 class="app-header__title" id="app-title"></h1>
+        <p class="app-header__tagline" id="app-tagline"></p>
+      </div>
+      <div class="app-header__actions">
+        <button type="button" class="button" id="preset-menu" aria-haspopup="menu" aria-expanded="false"></button>
+        <button type="button" class="button button--primary" id="export-pdf" disabled></button>
+      </div>
+    </header>
+
+    <div class="app-body">
+      <aside class="panel-stack" id="panels" aria-label=""></aside>
+      <main class="preview" id="preview">
+        <div class="preview__toolbar">
+          <div class="segmented" role="group" id="preview-mode"></div>
+          <p class="preview__status" id="preview-status" role="status"></p>
+        </div>
+        <div class="preview__stage" id="preview-stage"></div>
+        <p class="preview__hint" id="preview-hint"></p>
+      </main>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
+  </body>
+</html>

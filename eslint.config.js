@@ -38,6 +38,27 @@ export default [
     },
   },
   {
+    files: ["src/main.js", "src/render/**/*.js", "src/ui/**/*.js", "src/pdf/**/*.js", "src/fonts/**/*.js"],
+    languageOptions: {
+      globals: {
+        document: "readonly",
+        window: "readonly",
+        DOMParser: "readonly",
+        FontFace: "readonly",
+        Image: "readonly",
+        performance: "readonly",
+        requestAnimationFrame: "readonly",
+        indexedDB: "readonly",
+        navigator: "readonly",
+        Worker: "readonly",
+        Blob: "readonly",
+        URL: "readonly",
+        EyeDropper: "readonly",
+        crypto: "readonly",
+      },
+    },
+  },
+  {
     files: ["tests/**/*.js", "scripts/**/*.mjs"],
     rules: {
       "no-console": "off",

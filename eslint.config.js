@@ -47,6 +47,7 @@ export default [
         DOMParser: "readonly",
         DOMPoint: "readonly",
         matchMedia: "readonly",
+        Event: "readonly",
         FontFace: "readonly",
         Image: "readonly",
         performance: "readonly",

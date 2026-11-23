@@ -1,0 +1,318 @@
+{
+  "generatedAt": "2026-11-23",
+  "shortList": [
+    "inter",
+    "roboto",
+    "open-sans",
+    "lato",
+    "montserrat",
+    "poppins",
+    "playfair-display",
+    "merriweather",
+    "lora",
+    "oswald",
+    "roboto-mono",
+    "dancing-script",
+    "caveat",
+    "pacifico",
+    "great-vibes"
+  ],
+  "fonts": [
+    {
+      "id": "inter",
+      "family": "Inter",
+      "category": "sans-serif",
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "styles": [
+        "italic",
+        "normal"
+      ],
+      "subsets": [
+        "latin",
+        "latin-ext"
+      ],
+      "version": "5.3.0"
+    },
+    {
+      "id": "roboto",
+      "family": "Roboto",
+      "category": "sans-serif",
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "styles": [
+        "italic",
+        "normal"
+      ],
+      "subsets": [
+        "latin",
+        "latin-ext"
+      ],
+      "version": "5.3.0"
+    },
+    {
+      "id": "open-sans",
+      "family": "Open Sans",
+      "category": "sans-serif",
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "styles": [
+        "italic",
+        "normal"
+      ],
+      "subsets": [
+        "latin",
+        "latin-ext"
+      ],
+      "version": "5.3.0"
+    },
+    {
+      "id": "lato",
+      "family": "Lato",
+      "category": "sans-serif",
+      "weights": [
+        300,
+        400,
+        700
+      ],
+      "styles": [
+        "italic",
+        "normal"
+      ],
+      "subsets": [
+        "latin",
+        "latin-ext"
+      ],
+      "version": "5.3.0"
+    },
+    {
+      "id": "montserrat",
+      "family": "Montserrat",
+      "category": "sans-serif",
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "styles": [
+        "italic",
+        "normal"
+      ],
+      "subsets": [
+        "latin",
+        "latin-ext"
+      ],
+      "version": "5.3.0"
+    },
+    {
+      "id": "poppins",
+      "family": "Poppins",
+      "category": "sans-serif",
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "styles": [
+        "italic",
+        "normal"
+      ],
+      "subsets": [
+        "latin",
+        "latin-ext"
+      ],
+      "version": "5.3.0"
+    },
+    {
+      "id": "playfair-display",
+      "family": "Playfair Display",
+      "category": "serif",
+      "weights": [
+        400,
+        500,
+        600,
+        700
+      ],
+      "styles": [
+        "italic",
+        "normal"
+      ],
+      "subsets": [
+        "latin",
+        "latin-ext"
+      ],
+      "version": "5.3.0"
+    },
+    {
+      "id": "merriweather",
+      "family": "Merriweather",
+      "category": "serif",
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "styles": [
+        "italic",
+        "normal"
+      ],
+      "subsets": [
+        "latin",
+        "latin-ext"
+      ],
+      "version": "5.3.0"
+    },
+    {
+      "id": "lora",
+      "family": "Lora",
+      "category": "serif",
+      "weights": [
+        400,
+        500,
+        600,
+        700
+      ],
+      "styles": [
+        "italic",
+        "normal"
+      ],
+      "subsets": [
+        "latin",
+        "latin-ext"
+      ],
+      "version": "5.3.0"
+    },
+    {
+      "id": "oswald",
+      "family": "Oswald",
+      "category": "sans-serif",
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "styles": [
+        "normal"
+      ],
+      "subsets": [
+        "latin",
+        "latin-ext"
+      ],
+      "version": "5.3.0"
+    },
+    {
+      "id": "roboto-mono",
+      "family": "Roboto Mono",
+      "category": "monospace",
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "styles": [
+        "italic",
+        "normal"
+      ],
+      "subsets": [
+        "latin",
+        "latin-ext"
+      ],
+      "version": "5.3.0"
+    },
+    {
+      "id": "dancing-script",
+      "family": "Dancing Script",
+      "category": "handwriting",
+      "weights": [
+        400,
+        500,
+        600,
+        700
+      ],
+      "styles": [
+        "normal"
+      ],
+      "subsets": [
+        "latin",
+        "latin-ext"
+      ],
+      "version": "5.3.0"
+    },
+    {
+      "id": "caveat",
+      "family": "Caveat",
+      "category": "handwriting",
+      "weights": [
+        400,
+        500,
+        600,
+        700
+      ],
+      "styles": [
+        "normal"
+      ],
+      "subsets": [
+        "latin",
+        "latin-ext"
+      ],
+      "version": "5.3.0"
+    },
+    {
+      "id": "pacifico",
+      "family": "Pacifico",
+      "category": "handwriting",
+      "weights": [
+        400
+      ],
+      "styles": [
+        "normal"
+      ],
+      "subsets": [
+        "latin",
+        "latin-ext"
+      ],
+      "version": "5.3.0"
+    },
+    {
+      "id": "great-vibes",
+      "family": "Great Vibes",
+      "category": "handwriting",
+      "weights": [
+        400
+      ],
+      "styles": [
+        "normal"
+      ],
+      "subsets": [
+        "latin",
+        "latin-ext"
+      ],
+      "version": "5.3.0"
+    }
+  ]
+}

@@ -29,6 +29,8 @@ export function createToasts(host, { timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
     if (!message) return null;
     const node = document.createElement("p");
     node.className = `toast toast--${tone}`;
+    // warnings and errors are alerts, not polite status (spec 10.3)
+    if (tone === "error" || tone === "warning") node.setAttribute("role", "alert");
     node.textContent = message;
 
     const close = document.createElement("button");

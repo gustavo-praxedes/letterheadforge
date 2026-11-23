@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "groups": [
+    {
+      "title": "Papel",
+      "colors": [
+        "#FFFFFF",
+        "#FBF8F1",
+        "#F1EDE4",
+        "#E8E4DA",
+        "#D8E0E5",
+        "#E4DBCF"
+      ]
+    },
+    {
+      "title": "Tinta",
+      "colors": [
+        "#081525",
+        "#1E3555",
+        "#305B7E",
+        "#2F6F60",
+        "#4B5158",
+        "#C0943B"
+      ]
+    },
+    {
+      "title": "Pauta",
+      "colors": [
+        "#C8C8C8",
+        "#B6BBC2",
+        "#9AA3AD",
+        "#8CAFA7",
+        "#C0943B",
+        "#8C2F2F"
+      ]
+    }
+  ]
+}

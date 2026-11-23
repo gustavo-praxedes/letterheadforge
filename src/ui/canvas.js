@@ -23,7 +23,7 @@ function clientToMm(svg, event) {
   return { x: local.x, y: local.y };
 }
 
-export function mountCanvas(host, { store, measure = null, mode = "page", onSelect = () => {}, images = null } = {}) {
+export function mountCanvas(host, { store, measure = null, mode = "page", onSelect = () => {}, images = null, onWarnings = null } = {}) {
   if (!host) throw new TypeError("mountCanvas requires a host element");
   if (!store) throw new TypeError("mountCanvas requires a store");
 
@@ -177,6 +177,7 @@ export function mountCanvas(host, { store, measure = null, mode = "page", onSele
     svg.addEventListener("pointerdown", onPointerDown);
     drawOverlay();
     fitToStage();
+    if (typeof onWarnings === "function") onWarnings(scene.warnings ?? []);
   }
 
   function targetsFor(object) {

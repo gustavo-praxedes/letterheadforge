@@ -22,6 +22,9 @@ let toasts = null;
 let db = null;
 /** imageId -> object URL, so the renderer can point an <image> at the bytes. */
 const imageUrls = new Map();
+/** Palette (data/palette.json) and the last colours, kept in IndexedDB settings. */
+let palette = [];
+let recentColors = [];
 
 function el(id) {
   const node = document.getElementById(id);
@@ -70,6 +73,31 @@ function renderPreviewToolbar() {
 
 let canvas = null;
 
+/**
+ * Warnings raised by the core used to die inside buildScene: the user never saw
+ * "texto cortado" or "sem marca de corte". They now show under the preview.
+ */
+function renderWarnings(list) {
+  const host = document.getElementById("preview-warnings");
+  if (!host) return;
+  const seen = new Set();
+  const items = [];
+  for (const warning of list ?? []) {
+    const key = `${warning.code}|${JSON.stringify(warning.params ?? {})}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const text = warningText(warning.code, warning.params ?? {});
+    if (!text) continue;
+    const item = document.createElement("li");
+    item.className = "preview__warning";
+    item.dataset.code = warning.code;
+    item.textContent = text;
+    items.push(item);
+  }
+  host.replaceChildren(...items);
+  host.toggleAttribute("data-empty", items.length === 0);
+}
+
 function renderPreview() {
   const stage = el("preview-stage");
   stage.setAttribute("aria-label", strings.preview.ariaLabel);
@@ -82,7 +110,14 @@ function renderPreview() {
   }
   const started = performance.now();
   if (!canvas) {
-    canvas = mountCanvas(stage, { store, measure, mode: view.mode, onSelect: () => {}, images: imageUrls });
+    canvas = mountCanvas(stage, {
+      store,
+      measure,
+      mode: view.mode,
+      onSelect: () => {},
+      images: imageUrls,
+      onWarnings: (list) => renderWarnings(list),
+    });
   } else {
     canvas.setMode(view.mode);
     canvas.refresh();
@@ -93,6 +128,26 @@ function renderPreview() {
 
 function renderHint() {
   setText("preview-hint", strings.preview.hint);
+}
+
+async function restoreColors() {
+  try {
+    const response = await fetch("data/palette.json", { cache: "no-cache" });
+    if (response.ok) {
+      const data = await response.json();
+      palette = Array.isArray(data.groups) ? data.groups : [];
+    }
+  } catch {
+    palette = [];
+  }
+  if (!db) return;
+  const saved = await db.getSetting("recentColors").catch(() => null);
+  if (Array.isArray(saved)) recentColors = saved.slice(0, 8);
+}
+
+function rememberRecent(list) {
+  recentColors = Array.isArray(list) ? list.slice(0, 8) : [];
+  if (db) void db.setSetting("recentColors", recentColors).catch(() => {});
 }
 
 async function restoreSession() {
@@ -111,10 +166,16 @@ async function restoreSession() {
       if (draft.selectionId) store.select(draft.selectionId);
     }
     await restoreImageUrls();
-    const templates = await db.loadTemplates();
-    if (!templates || templates.length === 0) {
-      const response = await fetch("data/templates.json", { cache: "no-cache" });
-      if (response.ok) await db.saveTemplates(await response.json());
+    await restoreColors();
+    // Templates are read-only (spec 9.2): re-seed whenever the shipped set
+    // changes, not only when the store happens to be empty.
+    const installed = await db.loadTemplates();
+    const response = await fetch("data/templates.json", { cache: "no-cache" });
+    if (response.ok) {
+      const shipped = await response.json();
+      const installedIds = (installed ?? []).map((record) => record.id).sort().join(",");
+      const shippedIds = (shipped ?? []).map((record) => record.id).sort().join(",");
+      if (installedIds !== shippedIds) await db.saveTemplates(shipped);
     }
   } catch {
     toasts?.warning(strings.header.storageUnavailable);
@@ -136,7 +197,14 @@ async function restoreImageUrls() {
   }
 }
 
-createAutosave({ db, store });
+createAutosave({
+    db,
+    store,
+    onError: (error) => {
+      if (error?.code === "storage.quota") toasts?.error(warningText("storage.quota"));
+      else toasts?.warning(strings.header.storageUnavailable);
+    },
+  });
   return db;
 }
 
@@ -176,9 +244,95 @@ function requestImage() {
   input.click();
 }
 
+/**
+ * "image.dimensions" is an error *with an action* in the spec: offer to resample
+ * instead of just refusing the file.
+ */
+function askResample(width, height) {
+  return new Promise((resolve) => {
+    const dialog = document.createElement("dialog");
+    dialog.className = "dialog dialog--confirm";
+
+    const title = document.createElement("h2");
+    title.className = "dialog__title";
+    title.textContent = strings.images.resample.title;
+
+    const body = document.createElement("p");
+    body.className = "dialog__hint";
+    body.textContent = strings.images.resample.message
+      .replace("{width}", String(width))
+      .replace("{height}", String(height))
+      .replace("{max}", String(limits.image.maxSidePx));
+
+    const actions = document.createElement("div");
+    actions.className = "dialog__actions";
+    const cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.className = "button";
+    cancel.textContent = strings.images.resample.cancel;
+    const confirm = document.createElement("button");
+    confirm.type = "button";
+    confirm.className = "button button--primary";
+    confirm.textContent = strings.images.resample.confirm;
+
+    const finish = (value) => {
+      dialog.close();
+      dialog.remove();
+      resolve(value);
+    };
+    cancel.addEventListener("click", () => finish(false));
+    confirm.addEventListener("click", () => finish(true));
+    dialog.addEventListener("cancel", () => finish(false));
+
+    actions.append(cancel, confirm);
+    dialog.append(title, body, actions);
+    document.body.append(dialog);
+    dialog.showModal();
+    confirm.focus();
+  });
+}
+
+/** Redraws the image inside `maxSide` and returns a PNG blob. */
+async function downscaleImage(bitmap, maxSide) {
+  const scale = maxSide / Math.max(bitmap.width, bitmap.height);
+  const width = Math.max(1, Math.round(bitmap.width * scale));
+  const height = Math.max(1, Math.round(bitmap.height * scale));
+  const canvasElement = document.createElement("canvas");
+  canvasElement.width = width;
+  canvasElement.height = height;
+  const context = canvasElement.getContext("2d");
+  context.imageSmoothingQuality = "high";
+  context.drawImage(bitmap, 0, 0, width, height);
+  return new Promise((resolve) => canvasElement.toBlob((blob) => resolve(blob), "image/png"));
+}
+
 async function importImageFile(file) {
   try {
-    const bitmap = await createImageBitmap(file);
+    let source = file;
+    let bitmap = await createImageBitmap(file);
+    let precheck = validateImageFile({ bytes: file.size, width: bitmap.width, height: bitmap.height });
+    if (!precheck.ok && precheck.code === "image.dimensions") {
+      const accepted = await askResample(bitmap.width, bitmap.height);
+      bitmap.close?.();
+      if (!accepted) return;
+      const reduced = await downscaleImage(await createImageBitmap(file), limits.image.maxSidePx);
+      if (!reduced) {
+        toasts?.error(warningText("image.dimensions", { maxSidePx: limits.image.maxSidePx }));
+        return;
+      }
+      source = reduced;
+      bitmap = await createImageBitmap(reduced);
+      precheck = validateImageFile({ bytes: reduced.size, width: bitmap.width, height: bitmap.height });
+      if (!precheck.ok) {
+        toasts?.warning(warningText(precheck.code, precheck.params));
+        bitmap.close?.();
+        return;
+      }
+    } else if (!precheck.ok) {
+      toasts?.warning(warningText(precheck.code, precheck.params));
+      bitmap.close?.();
+      return;
+    }
     const preset = store.getPreset();
     const content = layoutSheet(preset.page.size, preset.page.orientation);
     const cell = content.ok ? content.cells[0] : { w: 210, h: 297 };
@@ -197,7 +351,7 @@ async function importImageFile(file) {
     const width = box.w;
     const height = box.h;
 
-    const check = validateImageFile({ bytes: file.size, width: bitmap.width, height: bitmap.height, widthMm: width, heightMm: height });
+    const check = validateImageFile({ bytes: source.size, width: bitmap.width, height: bitmap.height, widthMm: width, heightMm: height });
     if (!check.ok) {
       toasts?.warning(warningText(check.code, check.params));
       bitmap.close?.();
@@ -212,10 +366,10 @@ async function importImageFile(file) {
       return;
     }
 
-    imageUrls.set(imageId, URL.createObjectURL(file));
+    imageUrls.set(imageId, URL.createObjectURL(source));
     store.replace(result.preset);
     store.select(result.id);
-    if (db) await db.putImage(imageId, file, { bytes: file.size, width: bitmap.width, height: bitmap.height, type: file.type }).catch(() => {});
+    if (db) await db.putImage(imageId, source, { bytes: source.size, width: bitmap.width, height: bitmap.height, type: source.type }).catch(() => {});
     canvas?.refresh();
     toasts?.success(strings.objects.imported.replace("{name}", file.name));
   } catch {
@@ -306,7 +460,16 @@ function main() {
   renderHeader();
   renderPreviewToolbar();
   renderHint();
-  renderPanels(el("panels"), { store, onChange: () => renderPreview(), onRequestImage: () => requestImage() });
+  renderPanels(el("panels"), {
+    store,
+    onChange: () => renderPreview(),
+    onRequestImage: () => requestImage(),
+    colors: {
+      recents: () => recentColors,
+      palette: () => palette,
+      onRecent: (list) => rememberRecent(list),
+    },
+  });
   renderLayers(el("panels"), {
     store,
     getLayout: () => layoutSheet(store.getPreset().page.size, store.getPreset().page.orientation),

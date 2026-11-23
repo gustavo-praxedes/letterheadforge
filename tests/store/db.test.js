@@ -192,20 +192,23 @@ test("templates are stored and read back", async () => {
   assert.deepEqual(stored.map((entry) => entry.id), templates.map((entry) => entry.id));
 });
 
-test("data/templates.json holds three complete and valid presets", () => {
+test("data/templates.json holds the five models from the spec", () => {
   const templates = JSON.parse(readFileSync(new URL("../../data/templates.json", import.meta.url), "utf8"));
 
   assert.ok(Array.isArray(templates));
-  assert.equal(templates.length, 3);
+  assert.equal(templates.length, 5); // R68: pautado, quadriculado, pontilhado, caligrafia, em branco
+  assert.deepEqual(
+    templates.map((entry) => entry.name),
+    ["Caderno pautado", "Quadriculado", "Pontilhado", "Caligrafia", "Em branco"],
+  );
 
-  const sizes = templates.map((entry) => entry.preset.page.size).sort();
-  assert.deepEqual(sizes, ["A4", "A5", "A6"]);
-
-  assert.equal(templates[0].preset.frame.enabled, true);
-  assert.equal(templates[0].preset.ruling.enabled, true);
-  assert.equal(templates[1].preset.frame.enabled, false);
-  assert.equal(templates[1].preset.ruling.enabled, true);
-  assert.equal(templates[2].preset.ruling.enabled, false);
+  const [pautado, quadriculado, pontilhado, caligrafia, emBranco] = templates;
+  assert.equal(pautado.preset.ruling.type, "lines");
+  assert.equal(quadriculado.preset.ruling.type, "grid");
+  assert.equal(pontilhado.preset.ruling.type, "dots");
+  assert.equal(caligrafia.preset.ruling.type, "lines"); // P9: caligrafia is spacing, not a type
+  assert.equal(caligrafia.preset.ruling.y.spacing > pautado.preset.ruling.y.spacing, true);
+  assert.equal(emBranco.preset.ruling.enabled, false);
 
   for (const entry of templates) {
     assert.equal(typeof entry.id, "string");
@@ -252,4 +255,30 @@ test("storage failures are wrapped into a code", async () => {
   };
   const db = createDb({ indexedDB: () => factory });
   await expectCode(db.open(), "storage.quota");
+});
+
+test("settings keep small values such as the recent colours", async () => {
+  const { db } = makeDb();
+  await db.open();
+
+  assert.equal(await db.getSetting("recentColors"), null);
+  await db.setSetting("recentColors", ["#FFFFFF", "#081525"]);
+  assert.deepEqual(await db.getSetting("recentColors"), ["#FFFFFF", "#081525"]);
+
+  await db.setSetting("recentColors", ["#305B7E"]);
+  assert.deepEqual(await db.getSetting("recentColors"), ["#305B7E"]);
+
+  await expectCode(db.getSetting(""), "setting.invalid");
+  await expectCode(db.setSetting(null, 1), "setting.invalid");
+});
+
+test("the settings store survives a reopen", async () => {
+  const { factory, db } = makeDb();
+  await db.open();
+  await db.setSetting("recentColors", ["#C0943B"]);
+  await db.close();
+
+  const again = createDb({ indexedDB: () => factory });
+  await again.open();
+  assert.deepEqual(await again.getSetting("recentColors"), ["#C0943B"]);
 });

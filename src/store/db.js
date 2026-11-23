@@ -17,7 +17,10 @@ import { validateImage, validatePreset } from "../core/validate.js";
  */
 
 const DB_NAME = "letterheadforge";
-const DB_VERSION = 1;
+// The spec describes version 1 with five stores. This build shipped a dev
+// database without `settings`, so the version has to move for the upgrade to
+// run; a fresh install still lands on the spec layout in one step.
+const DB_VERSION = 2;
 const DRAFT_KEY = "current";
 
 /** Store name -> key path. `draft` is a single record with a fixed key. */
@@ -26,6 +29,7 @@ const STORE_KEYS = {
   templates: "id",
   presets: "id",
   images: "id",
+  settings: "key",
 };
 
 const QUOTA_ERRORS = new Set(["QuotaExceededError", "NS_ERROR_DOM_QUOTA_REACHED"]);
@@ -329,6 +333,22 @@ export function createDb({ indexedDB: factoryOption } = {}) {
     return record;
   }
 
+  async function getSetting(key) {
+    if (typeof key !== "string" || key === "") {
+      throw new DbError("setting.invalid", "Setting key is required");
+    }
+    const record = await withStore("settings", "readonly", (store) => store.get(key));
+    return record ? record.value : null;
+  }
+
+  async function setSetting(key, value) {
+    if (typeof key !== "string" || key === "") {
+      throw new DbError("setting.invalid", "Setting key is required");
+    }
+    await withStore("settings", "readwrite", (store) => store.put({ key, value }));
+    return value;
+  }
+
   async function getImage(id) {
     if (typeof id !== "string" || id === "") {
       throw new DbError("image.invalid", "Image id is required");
@@ -365,6 +385,8 @@ export function createDb({ indexedDB: factoryOption } = {}) {
     saveTemplates,
     putImage,
     getImage,
+    getSetting,
+    setSetting,
     deleteImage,
     close,
   };

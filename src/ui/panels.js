@@ -834,6 +834,8 @@ function makeTextareaControl(field, id) {
  * controller so `buildField` can treat it like the other inputs.
  */
 function makeColorControl(field, id, commit) {
+  // module-level: the section builders are deep and only the app owns the data
+
   const host = document.createElement("div");
   host.className = "field__color-host";
 
@@ -886,6 +888,11 @@ function makeColorControl(field, id, commit) {
         commit(current);
       },
       onClose: closePicker,
+      recents: typeof colorSources.recents === "function" ? colorSources.recents() : [],
+      palette: typeof colorSources.palette === "function" ? colorSources.palette() : [],
+      onRecent: (list) => {
+        if (typeof colorSources.onRecent === "function") colorSources.onRecent(list);
+      },
     });
     popover.append(picker.node);
     popover.hidden = false;
@@ -1325,7 +1332,10 @@ function objectsSectionNode(store, options = {}) {
  * Mount the panels in `host`, keep every control in sync with the store and call
  * `onChange` (preview refresh hook) after each change.
  */
-export function renderPanels(host, { store, onChange, onRequestImage = null } = {}) {
+let colorSources = {};
+
+export function renderPanels(host, { store, onChange, onRequestImage = null, colors = null } = {}) {
+  colorSources = colors ?? {};
   if (!host) throw new TypeError("renderPanels requires a host element");
   if (!store) throw new TypeError("renderPanels requires a store");
 

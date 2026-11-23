@@ -149,6 +149,14 @@ export const strings = {
       rename: "Renomear",
     },
   },
+  images: {
+    resample: {
+      title: "Imagem grande demais",
+      message: "A imagem tem {width}×{height} px e o limite do lado maior é {max} px. Reduzir a imagem para {max} px e importar?",
+      confirm: "Reduzir e importar",
+      cancel: "Cancelar",
+    },
+  },
   objects: {
     empty: "Selecione uma caixa de texto na lista de camadas para editar o conteúdo.",
     names: {
@@ -200,6 +208,8 @@ export const strings = {
     close: "Concluir",
     invalidHex: "Hexadecimal inválido.",
     open: "Abrir seletor de cor",
+    recent: "Cores recentes",
+    palette: "Paleta",
   },
   units: {
     millimetre: "mm",

@@ -10,9 +10,10 @@ import { strings } from "../strings.pt-BR.js";
  */
 
 const RECENT_LIMIT = 8;
-const recent = [];
 
-export function createColorPicker({ value = "#FFFFFFFF", onChange = () => {}, onClose = () => {} } = {}) {
+export function createColorPicker({ value = "#FFFFFFFF", onChange = () => {}, onClose = () => {}, recents = [], palette = [], onRecent = null } = {}) {
+  // recents arrive persisted (spec 6: last 8 colours, kept in the browser)
+  const recent = Array.isArray(recents) ? [...recents].slice(0, RECENT_LIMIT) : [];
   const parsed = parseHex(value);
   let alpha = parsed.a === undefined ? 1 : Math.round(parsed.a * 100) / 100;
   let hsv = parsed.ok ? rgbToHsv(parsed) : { h: 0, s: 0, v: 0 };
@@ -71,6 +72,26 @@ export function createColorPicker({ value = "#FFFFFFFF", onChange = () => {}, on
 
   const recentBox = document.createElement("div");
   recentBox.className = "color-picker__recent";
+  recentBox.setAttribute("aria-label", strings.picker.recent);
+
+  const paletteBox = document.createElement("div");
+  paletteBox.className = "color-picker__palette";
+  for (const group of Array.isArray(palette) ? palette : []) {
+    const rows = document.createElement("div");
+    rows.className = "color-picker__palette-group";
+    const title = document.createElement("span");
+    title.className = "color-picker__palette-title";
+    title.textContent = group.title ?? "";
+    const swatches = document.createElement("div");
+    swatches.className = "color-picker__swatches";
+    renderSwatches(swatches, group.colors ?? [], (hex) => {
+      applyHex(hex);
+      commitRecent();
+    });
+    rows.append(title, swatches);
+    paletteBox.append(rows);
+  }
+  paletteBox.hidden = paletteBox.childElementCount === 0;
 
   const actions = document.createElement("div");
   actions.className = "color-picker__actions";
@@ -85,7 +106,24 @@ export function createColorPicker({ value = "#FFFFFFFF", onChange = () => {}, on
   closeButton.textContent = strings.picker.close;
   actions.append(eyedropperButton, closeButton);
 
-  root.append(preview, sv, hue, alphaInput, hexLabel, recentBox, actions);
+  root.append(preview, sv, hue, alphaInput, hexLabel, paletteBox, recentBox, actions);
+
+  /** Colour swatches for the palette and for the recent list. */
+  function renderSwatches(container, colors, onPick) {
+    container.replaceChildren();
+    for (const color of colors) {
+      if (typeof color !== "string") continue;
+      const swatch = document.createElement("button");
+      swatch.type = "button";
+      swatch.className = "color-picker__swatch";
+      swatch.style.backgroundColor = color;
+      swatch.dataset.color = color;
+      swatch.setAttribute("aria-label", color);
+      swatch.title = color;
+      swatch.addEventListener("click", () => onPick(color));
+      container.append(swatch);
+    }
+  }
 
   function currentHex() {
     const rgb = hsvToRgb(hsv);
@@ -175,13 +213,22 @@ export function createColorPicker({ value = "#FFFFFFFF", onChange = () => {}, on
   function commitRecent() {
     const hex = currentHex();
     const next = pushRecent(recent, hex.slice(0, 7), { limit: RECENT_LIMIT });
+    if (typeof onRecent === "function") onRecent(next);
     recent.length = 0;
     recent.push(...next);
     renderRecent();
   }
 
   function renderRecent() {
+    const nodes = [];
+    if (recent.length > 0) {
+      const title = document.createElement("span");
+      title.className = "color-picker__palette-title";
+      title.textContent = strings.picker.recent;
+      nodes.push(title);
+    }
     recentBox.replaceChildren(
+      ...nodes,
       ...recent.map((color) => {
         const swatch = document.createElement("button");
         swatch.type = "button";

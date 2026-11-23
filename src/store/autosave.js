@@ -6,9 +6,11 @@
  * same serialized preset as the last successful write is skipped.
  */
 
-const DEFAULT_DELAY_MS = 800;
+import { autosaveMs } from "../config.js";
 
-export function createAutosave({ db, store, delayMs = DEFAULT_DELAY_MS } = {}) {
+const DEFAULT_DELAY_MS = autosaveMs;
+
+export function createAutosave({ db, store, delayMs = DEFAULT_DELAY_MS, onError = null } = {}) {
   if (!db || typeof db.saveDraft !== "function") {
     throw new TypeError("createAutosave requires a db with saveDraft()");
   }
@@ -54,7 +56,11 @@ export function createAutosave({ db, store, delayMs = DEFAULT_DELAY_MS } = {}) {
     clearTimer();
     timer = setTimeout(() => {
       timer = null;
-      flush().catch(() => {});
+      // A quota error must reach the user (spec 10.4): silence here lost the
+      // "browser is full, export your preset" message entirely.
+      flush().catch((error) => {
+        if (typeof onError === "function") onError(error);
+      });
     }, delayMs);
   }
 

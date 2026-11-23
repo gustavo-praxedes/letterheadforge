@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildScene } from "../../src/core/scene.js";
+import { buildScene, rotatedSize, watermarkFitScale } from "../../src/core/scene.js";
 import { layoutSheet } from "../../src/core/layout.js";
 import { defaultPreset } from "../../src/core/schema.js";
 import { cutMark } from "../../src/config.js";
@@ -231,4 +231,100 @@ test("an image watermark defaults to half the sheet width", () => {
   assert.equal(watermark.w, 105);
   assert.equal(watermark.h, 105);
   assert.equal(watermark.x, 52.5);
+});
+
+test("rotatedSize returns the axis-aligned box of a rotated rectangle", () => {
+  assert.deepEqual(rotatedSize(100, 10, 0), { w: 100, h: 10 });
+  const ninety = rotatedSize(100, 10, 90);
+  assert.ok(Math.abs(ninety.w - 10) < 1e-9);
+  assert.ok(Math.abs(ninety.h - 100) < 1e-9);
+});
+
+test("watermarkFitScale never enlarges and shrinks only when needed", () => {
+  assert.equal(watermarkFitScale({ w: 50, h: 10, availableW: 100, availableH: 100 }), 1);
+  const half = watermarkFitScale({ w: 200, h: 10, availableW: 100, availableH: 100 });
+  assert.ok(Math.abs(half - 0.5) < 1e-9);
+  assert.equal(watermarkFitScale({ w: 0, h: 10, availableW: 100, availableH: 100 }), 1);
+});
+
+test("a watermark is measured against the page, not the A4 sheet", () => {
+  const preset = defaultPreset();
+  preset.page.size = "A5";
+  preset.watermark = {
+    ...preset.watermark,
+    enabled: true,
+    kind: "text",
+    x: 0,
+    y: 0,
+    w: 0,
+    h: 0,
+    text: { ...preset.watermark.text, content: "letterheadforge", sizePt: 48, weight: 400 },
+  };
+  const scene = buildScene({ preset, layout: A5, mode: "page", measure });
+  const watermark = flatten(scene.primitives).find((primitive) => primitive.kind === "text");
+  assert.ok(watermark);
+  // the cell is 0.5 mm smaller than the nominal size (layout tolerance)
+  const pageWidth = A5.cells[0].w;
+  assert.ok(watermark.x >= 0, `x ${watermark.x} must not be negative`);
+  assert.ok(watermark.x + watermark.w <= pageWidth + 0.001, `${watermark.x} + ${watermark.w} must fit the A5 width`);
+  assert.ok(Math.abs(watermark.x - (pageWidth - watermark.w) / 2) < 0.01);
+});
+
+test("a watermark longer than the page shrinks its font instead of overflowing", () => {
+  const preset = defaultPreset();
+  preset.page.size = "A5";
+  preset.watermark = {
+    ...preset.watermark,
+    enabled: true,
+    kind: "text",
+    x: 0,
+    y: 0,
+    w: 0,
+    h: 0,
+    text: { ...preset.watermark.text, content: "CONSTRUTORA FG RASCUNHO 2026", sizePt: 48, weight: 700 },
+  };
+  const scene = buildScene({ preset, layout: A5, mode: "page", measure });
+  const watermark = flatten(scene.primitives).find((primitive) => primitive.kind === "text");
+  assert.ok(watermark);
+  assert.ok(watermark.sizePt < 48, `font must shrink, got ${watermark.sizePt} pt`);
+  assert.ok(watermark.sizePt >= 4);
+  assert.ok(watermark.x + watermark.w <= A5.cells[0].w + 0.001);
+});
+
+test("a short watermark keeps its 48 pt", () => {
+  const preset = defaultPreset();
+  preset.watermark = {
+    ...preset.watermark,
+    enabled: true,
+    kind: "text",
+    x: 0,
+    y: 0,
+    w: 0,
+    h: 0,
+    text: { ...preset.watermark.text, content: "X", sizePt: 48, weight: 400 },
+  };
+  const scene = buildScene({ preset, layout: A4, mode: "page", measure });
+  const watermark = flatten(scene.primitives).find((primitive) => primitive.kind === "text");
+  assert.equal(watermark.sizePt, 48);
+});
+
+test("rotation is taken into account when fitting the watermark", () => {
+  const preset = defaultPreset();
+  preset.page.size = "A5";
+  preset.watermark = {
+    ...preset.watermark,
+    enabled: true,
+    kind: "text",
+    x: 0,
+    y: 0,
+    w: 0,
+    h: 0,
+    rotation: -35,
+    text: { ...preset.watermark.text, content: "letterheadforge", sizePt: 48, weight: 400 },
+  };
+  const scene = buildScene({ preset, layout: A5, mode: "page", measure });
+  const watermark = flatten(scene.primitives).find((primitive) => primitive.kind === "text");
+  const rotated = rotatedSize(watermark.w, watermark.h, -35);
+  assert.ok(rotated.w <= A5.cells[0].w + 0.001, `rotated width ${rotated.w}`);
+  assert.ok(rotated.h <= A5.cells[0].h + 0.001, `rotated height ${rotated.h}`);
 });

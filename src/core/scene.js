@@ -77,30 +77,78 @@ function buildTextPrimitive({ objectId, box, style, text, measure, padding = 0, 
  * 48 pt with its measured width, an image takes half the sheet width, and both
  * sit centred on the page. Explicit x/y/w/h always win.
  */
-function watermarkGeometry({ watermark, sheet, measure }) {
+/** Bounding box of a `w × h` rectangle rotated about its centre, in mm. */
+export function rotatedSize(w, h, rotation = 0) {
+  const radians = ((Number(rotation) || 0) * Math.PI) / 180;
+  const cos = Math.abs(Math.cos(radians));
+  const sin = Math.abs(Math.sin(radians));
+  return { w: w * cos + h * sin, h: w * sin + h * cos };
+}
+
+/**
+ * Largest scale (never above 1) that keeps the rotated watermark inside the
+ * usable area. Without this a 48 pt word simply ran past the paper edge and was
+ * chopped by the page clip — the mark looked like it was escaping the page.
+ */
+export function watermarkFitScale({ w, h, rotation = 0, availableW, availableH }) {
+  if (!(w > 0) || !(h > 0) || !(availableW > 0) || !(availableH > 0)) return 1;
+  const rotated = rotatedSize(w, h, rotation);
+  return Math.min(1, availableW / rotated.w, availableH / rotated.h);
+}
+
+function watermarkGeometry({ watermark, sheet, margins = {}, measure }) {
   const pageW = sheet?.w ?? 210;
   const pageH = sheet?.h ?? 297;
+  const availableW = Math.max(1, pageW - (margins.left ?? 0) - (margins.right ?? 0));
+  const availableH = Math.max(1, pageH - (margins.top ?? 0) - (margins.bottom ?? 0));
   const center = (value, size, limit) => (value > 0 ? value : Math.max(0, (limit - size) / 2));
 
   if (watermark.kind === "image") {
-    const w = watermark.w > 0 ? watermark.w : pageW * WATERMARK_DEFAULT_WIDTH_RATIO;
-    const h = watermark.h > 0 ? watermark.h : w;
-    return { w, h, x: center(watermark.x, w, pageW), y: center(watermark.y, h, pageH) };
+    let w = watermark.w > 0 ? watermark.w : pageW * WATERMARK_DEFAULT_WIDTH_RATIO;
+    let h = watermark.h > 0 ? watermark.h : w;
+    const scale = watermarkFitScale({ w, h, rotation: watermark.rotation, availableW, availableH });
+    w *= scale;
+    h *= scale;
+    return { w, h, scale, x: center(watermark.x, w, pageW), y: center(watermark.y, h, pageH) };
   }
 
   const text = watermark.text ?? {};
-  const style = { fontId: text.fontId, weight: text.weight, italic: text.italic, sizePt: text.sizePt };
+  const sizePt = text.sizePt ?? 48;
+  const style = { fontId: text.fontId, weight: text.weight, italic: text.italic, sizePt };
   const measured = typeof measure === "function" ? measure(text.content ?? "", style) : 0;
-  const w = watermark.w > 0 ? watermark.w : measured;
-  const h = watermark.h > 0 ? watermark.h : Math.max(ptToMm(text.sizePt ?? 48) * 1.3, 1);
-  return { w, h, x: center(watermark.x, w, pageW), y: center(watermark.y, h, pageH) };
+  let w = watermark.w > 0 ? watermark.w : measured;
+  let h = watermark.h > 0 ? watermark.h : Math.max(ptToMm(sizePt) * 1.3, 1);
+
+  // The text is drawn unwrapped, so the font has to shrink to fit the sheet.
+  let scale = watermarkFitScale({ w, h, rotation: watermark.rotation, availableW, availableH });
+  let fittedSizePt = sizePt;
+  if (scale < 1 && watermark.w <= 0 && typeof measure === "function") {
+    fittedSizePt = Math.max(limits.textSizePt.min, sizePt * scale);
+    const styleFit = { ...style, sizePt: fittedSizePt };
+    w = measure(text.content ?? "", styleFit);
+    h = Math.max(ptToMm(fittedSizePt) * 1.3, 1);
+    scale = watermarkFitScale({ w, h, rotation: watermark.rotation, availableW, availableH });
+    w *= scale;
+    h *= scale;
+  } else if (scale < 1) {
+    w *= scale;
+    h *= scale;
+  }
+  return { w, h, scale, sizePt: fittedSizePt, x: center(watermark.x, w, pageW), y: center(watermark.y, h, pageH) };
 }
 
-function watermarkPrimitives({ preset, layout, measure, warnings }) {
+function watermarkPrimitives({ preset, cell, measure, warnings }) {
   const watermark = preset.watermark;
   if (watermark.enabled !== true) return [];
 
-  const geometry = watermarkGeometry({ watermark, sheet: layout?.sheet ?? layout?.cells?.[0], measure });
+  // Geometry belongs to the page being drawn, never to the whole A4 sheet: an
+  // A5 page centred against 210 mm pushed the mark 62 mm past its own edge.
+  const geometry = watermarkGeometry({
+    watermark,
+    sheet: cell,
+    margins: preset.page?.margins ?? {},
+    measure,
+  });
   const w = geometry.w > 0 ? geometry.w : undefined;
   const h = geometry.h > 0 ? geometry.h : undefined;
 
@@ -138,7 +186,7 @@ function watermarkPrimitives({ preset, layout, measure, warnings }) {
   const primitive = buildTextPrimitive({
     objectId: "watermark",
     box,
-    style: { ...text, color: text.color },
+    style: { ...text, sizePt: geometry.sizePt ?? text.sizePt, color: text.color },
     text: text.content ?? "",
     measure,
     warnings,
@@ -222,10 +270,14 @@ export function buildScene({ preset, layout, cellIndex = 0, alphaMasks = new Map
     const offsetY = isPage ? -cell.y : cell.y;
     const children = [];
 
-    children.push(...watermarkPrimitives({ preset, layout, measure, warnings }).map((primitive) => ({
+    // The watermark is already local to the cell, so in page mode it needs no
+    // offset at all — subtracting `cell.x` (0.5 mm on an A5) broke the centring.
+    const watermarkOffsetX = isPage ? 0 : cell.x;
+    const watermarkOffsetY = isPage ? 0 : cell.y;
+    children.push(...watermarkPrimitives({ preset, cell, measure, warnings }).map((primitive) => ({
       ...primitive,
-      x: primitive.x + offsetX,
-      y: primitive.y + offsetY,
+      x: primitive.x + watermarkOffsetX,
+      y: primitive.y + watermarkOffsetY,
     })));
 
     const localCell = { x: 0, y: 0, w: cell.w, h: cell.h };

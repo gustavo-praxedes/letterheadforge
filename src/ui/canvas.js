@@ -86,11 +86,18 @@ export function mountCanvas(host, { store, measure = null, onSelect = () => {} }
       }
       nodes.push(box);
 
+      // handles keep a constant size on screen so they stay hittable at any zoom
+      const sceneSvg = sceneLayer.querySelector("svg");
+      const pxPerMm = sceneSvg ? sceneSvg.getBoundingClientRect().width / scene.widthMm : 2;
+      const coarse = typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches;
+      const radiusPx = coarse ? 11 : 7;
+      const radiusMm = pxPerMm > 0 ? radiusPx / pxPerMm : 1.4;
+
       for (const [handle, position] of Object.entries(handlePositions(object))) {
         const dot = document.createElementNS(SVG_NS, "circle");
         dot.setAttribute("cx", String(position.x));
         dot.setAttribute("cy", String(position.y));
-        dot.setAttribute("r", "1.4");
+        dot.setAttribute("r", String(radiusMm));
         dot.setAttribute("class", "canvas__handle");
         dot.dataset.handle = handle;
         nodes.push(dot);
@@ -125,6 +132,9 @@ export function mountCanvas(host, { store, measure = null, onSelect = () => {} }
     }
     scene = buildScene({ preset, layout, mode: "page", ...(measure ? { measure } : {}) });
     const svg = mountScene(sceneLayer, scene, { label: strings.preview.ariaLabel });
+    // An SVG without width/height attributes gets a 0x0 viewport unless CSS gives
+    // it a ratio: the box would paint its background while the content vanished.
+    svg.style.aspectRatio = `${scene.widthMm} / ${scene.heightMm}`;
     svg.addEventListener("pointerdown", onPointerDown);
     drawOverlay();
   }

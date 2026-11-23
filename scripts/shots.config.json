@@ -91,7 +91,7 @@
       "label": "app-objeto-selecionado",
       "path": "/",
       "waitFor": "main",
-      "fullPage": true,
+      "fullPage": false,
       "settleMs": 400,
       "actions": [
         {
@@ -103,11 +103,16 @@
           "selector": "#panel-field-objects-addText"
         },
         {
+          "type": "wait",
+          "ms": 350
+        },
+        {
           "type": "fill",
           "selector": "[data-section=\"objects\"] textarea",
           "value": "Construtora FG\nRua das Flores, 120 \u2014 Cara\u00fabas/RN\n(84) 99962-4013"
         }
-      ]
+      ],
+      "scale": 2
     },
     {
       "label": "app-moldura-mobile",
@@ -147,7 +152,7 @@
       "viewport": "mobile",
       "waitFor": "main",
       "fullPage": true,
-      "settleMs": 400,
+      "settleMs": 600,
       "actions": [
         {
           "type": "click",
@@ -158,10 +163,20 @@
           "selector": "#panel-field-objects-addText"
         },
         {
+          "type": "wait",
+          "ms": 350
+        },
+        {
+          "type": "fill",
+          "selector": "[data-section=\"objects\"] textarea",
+          "value": "Construtora FG\n(84) 99962-4013"
+        },
+        {
           "type": "scrollIntoView",
           "selector": ".canvas"
         }
-      ]
+      ],
+      "scale": 2
     }
   ]
 }

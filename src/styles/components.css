@@ -500,20 +500,21 @@
   height: 100%;
   pointer-events: none;
   overflow: visible;
+  background: transparent;
 }
 
 .canvas__selection {
   fill: none;
-  stroke: var(--color-accent);
-  stroke-width: 0.4;
+  stroke: var(--color-accent-strong, var(--color-accent));
+  stroke-width: 1.5;
   stroke-dasharray: 2 1.5;
   vector-effect: non-scaling-stroke;
 }
 
 .canvas__handle {
   fill: var(--color-surface);
-  stroke: var(--color-accent);
-  stroke-width: 0.3;
+  stroke: var(--color-accent-strong, var(--color-accent));
+  stroke-width: 1.5;
   vector-effect: non-scaling-stroke;
 }
 

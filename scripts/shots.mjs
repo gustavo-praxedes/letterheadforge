@@ -49,6 +49,10 @@ async function applyAction(page, action) {
   else if (action.type === "press") await page.press(action.selector ?? "body", action.key);
   else if (action.type === "wait") await page.waitForTimeout(action.ms ?? 200);
   else if (action.type === "scrollIntoView") await page.locator(action.selector).scrollIntoViewIfNeeded();
+  else if (action.type === "dump") {
+    const value = await page.evaluate(action.script ?? "1");
+    process.stdout.write(`  dump ${action.label ?? ""}: ${JSON.stringify(value)}\n`);
+  }
   else throw new Error(`Unknown action type: ${action.type}`);
 }
 
@@ -83,7 +87,7 @@ async function main() {
       const context = await browser.newContext({
         viewport,
         colorScheme: args.theme === "dark" ? "dark" : "light",
-        deviceScaleFactor: 1,
+        deviceScaleFactor: shot.scale ?? 1,
       });
       const page = await context.newPage();
       const baseUrl = new URL(args.url).toString();

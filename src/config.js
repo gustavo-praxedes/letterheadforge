@@ -58,7 +58,7 @@ export const keyboard = { nudgeMm: 1, nudgeShiftMm: 10 };
 export const units = { mmPerInch: 25.4, ptPerInch: 72 };
 export const fonts = {
   cdnBase: "https://cdn.jsdelivr.net/fontsource/fonts",
-  urlTemplate: "{base}/{id}@{version}/{subset}-{weight}-{style}.woff2",
+  urlTemplate: "{base}/{id}@{version}/{subset}-{weight}-{style}.woff",
   subsets: ["latin", "latin-ext"],
 };
 export const enums = {

@@ -1,4 +1,4 @@
-import { hsvToRgb, parseHex, pushRecent, readableTextColor, rgbToHsv, toHex } from "./color.js";
+import { hsvToRgb, parseHex, pushRecent, rgbToHsv, toHex } from "./color.js";
 import { strings } from "../strings.pt-BR.js";
 
 /**
@@ -24,6 +24,11 @@ export function createColorPicker({ value = "#FFFFFFFF", onChange = () => {}, on
 
   const preview = document.createElement("div");
   preview.className = "color-picker__preview";
+  const previewChip = document.createElement("span");
+  previewChip.className = "color-picker__preview-chip";
+  const previewText = document.createElement("span");
+  previewText.className = "color-picker__preview-text";
+  preview.append(previewChip, previewText);
 
   const sv = document.createElement("div");
   sv.className = "color-picker__sv";
@@ -91,9 +96,10 @@ export function createColorPicker({ value = "#FFFFFFFF", onChange = () => {}, on
   function emit({ notify = true } = {}) {
     const hex = currentHex();
     hexInput.value = hex;
-    preview.style.background = hex;
-    preview.style.color = readableTextColor(hsvToRgb(hsv));
-    preview.textContent = hex;
+    // the chip carries the colour; the hex sits beside it in normal text colour,
+    // so white on white can never happen
+    previewChip.style.background = hex;
+    previewText.textContent = hex;
     sv.style.setProperty("--picker-hue", `hsl(${hsv.h} 100% 50%)`);
     svHandle.style.left = `${hsv.s * 100}%`;
     svHandle.style.top = `${(1 - hsv.v) * 100}%`;

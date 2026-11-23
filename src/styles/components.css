@@ -236,12 +236,25 @@
 .color-picker__preview {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: var(--space-2);
   min-height: var(--space-6);
+  padding: var(--space-1) var(--space-2);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-sm);
-  font-size: var(--font-size-xs);
+}
+
+.color-picker__preview-chip {
+  flex: 1;
+  height: var(--space-5);
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 var(--border-width) var(--color-border-strong);
+}
+
+.color-picker__preview-text {
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
   font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
 }
 
 .color-picker__sv {

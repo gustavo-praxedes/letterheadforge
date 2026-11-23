@@ -18,10 +18,15 @@
       "path": "/",
       "waitFor": "main",
       "fullPage": true,
+      "settleMs": 250,
       "actions": [
         {
           "type": "click",
           "selector": "[data-section=\"frame\"] .panel__summary"
+        },
+        {
+          "type": "scrollIntoView",
+          "selector": "[data-section=\"frame\"] .panel__body"
         }
       ]
     },
@@ -30,10 +35,15 @@
       "path": "/",
       "waitFor": "main",
       "fullPage": true,
+      "settleMs": 250,
       "actions": [
         {
           "type": "click",
           "selector": "[data-section=\"ruling\"] .panel__summary"
+        },
+        {
+          "type": "scrollIntoView",
+          "selector": "[data-section=\"ruling\"] .panel__body"
         }
       ]
     },
@@ -42,6 +52,7 @@
       "path": "/",
       "waitFor": "main",
       "fullPage": true,
+      "settleMs": 300,
       "actions": [
         {
           "type": "click",
@@ -56,6 +67,10 @@
           "type": "fill",
           "selector": "[data-field=\"page.margins.bottom\"] input",
           "value": "50"
+        },
+        {
+          "type": "scrollIntoView",
+          "selector": "[data-section=\"ruling\"] .panel__body"
         }
       ]
     },
@@ -64,6 +79,7 @@
       "path": "/",
       "waitFor": "main",
       "fullPage": true,
+      "settleMs": 250,
       "actions": [
         {
           "type": "click",
@@ -77,10 +93,29 @@
       "viewport": "mobile",
       "waitFor": "main",
       "fullPage": true,
+      "settleMs": 250,
       "actions": [
         {
           "type": "click",
           "selector": "[data-section=\"frame\"] .panel__summary"
+        },
+        {
+          "type": "scrollIntoView",
+          "selector": "[data-section=\"frame\"] .panel__body"
+        }
+      ]
+    },
+    {
+      "label": "app-camadas-mobile",
+      "path": "/",
+      "viewport": "mobile",
+      "waitFor": "main",
+      "fullPage": true,
+      "settleMs": 200,
+      "actions": [
+        {
+          "type": "scrollIntoView",
+          "selector": "[data-section=\"layers\"] .panel__body"
         }
       ]
     }

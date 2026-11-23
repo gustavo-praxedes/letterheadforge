@@ -257,12 +257,17 @@ button {
     display: none;
   }
 
-  /* stacked flow: the panel list scrolls the page, the preview sits below it */
+  /* stacked flow: the document scrolls, so the preview sits below the panels
+     and a full-page capture sees everything */
+  body {
+    height: auto;
+  }
+
   .app-body {
     display: flex;
     flex-direction: column;
     min-height: 0;
-    overflow-y: auto;
+    overflow: visible;
   }
 
   .panel-stack {

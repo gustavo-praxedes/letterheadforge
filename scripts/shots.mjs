@@ -48,6 +48,7 @@ async function applyAction(page, action) {
   else if (action.type === "fill") await page.fill(action.selector, action.value ?? "");
   else if (action.type === "press") await page.press(action.selector ?? "body", action.key);
   else if (action.type === "wait") await page.waitForTimeout(action.ms ?? 200);
+  else if (action.type === "scrollIntoView") await page.locator(action.selector).scrollIntoViewIfNeeded();
   else throw new Error(`Unknown action type: ${action.type}`);
 }
 
@@ -88,8 +89,11 @@ async function main() {
       const baseUrl = new URL(args.url).toString();
       const target = shot.path && shot.path !== "/" ? new URL(shot.path, baseUrl).toString() : baseUrl;
       await page.goto(target, { waitUntil: "load" });
-      for (const action of shot.actions ?? []) await applyAction(page, action);
+      // waitFor first: the app mounts its panels from module JS, so actions
+      // fired before that selector exists click into the void.
       if (shot.waitFor) await page.waitForSelector(shot.waitFor, { timeout: 15000 });
+      for (const action of shot.actions ?? []) await applyAction(page, action);
+      if (shot.settleMs) await page.waitForTimeout(shot.settleMs);
       const name = `${String(index + 1).padStart(2, "0")}-${slug(shot.label ?? `shot-${index + 1}`)}.png`;
       const file = join(baseDir, name);
       await page.screenshot({ path: file, fullPage: Boolean(shot.fullPage) });

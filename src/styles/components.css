@@ -1,0 +1,199 @@
+/* Controls used by the configuration panels (spec 10.1, 10.2, 10.3).
+   Only tokens from tokens.css — no literal colour, size or timing. */
+
+/* ---------- section body ---------- */
+
+.panel__body--fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  color: var(--color-text);
+}
+
+.panel__chevron {
+  display: inline-block;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-right: var(--border-width) solid var(--color-text-muted);
+  border-bottom: var(--border-width) solid var(--color-text-muted);
+  transform: rotate(45deg);
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.panel[open] > .panel__summary .panel__chevron {
+  transform: rotate(-135deg);
+}
+
+/* ---------- field row ---------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.field__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.field__label {
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-tight);
+}
+
+.field__unit {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.field__help {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.field__warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  color: var(--color-warning);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-normal);
+}
+
+.field__warning[hidden] {
+  display: none;
+}
+
+/* ---------- text / number input and select ---------- */
+
+.field__input {
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: 0 var(--space-3);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.field__input:hover:not(:disabled) {
+  border-color: var(--color-text-muted);
+}
+
+.field__input:focus-visible {
+  border-color: var(--color-accent);
+}
+
+.field__input:disabled {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.field__input--number {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.field__select {
+  appearance: none;
+  padding-right: var(--space-6);
+  background-image: linear-gradient(45deg, transparent 50%, var(--color-text-muted) 50%),
+    linear-gradient(135deg, var(--color-text-muted) 50%, transparent 50%);
+  background-position: calc(100% - var(--space-4)) 50%, calc(100% - var(--space-3)) 50%;
+  background-size: var(--space-2) var(--space-2), var(--space-2) var(--space-2);
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+/* ---------- checkbox ---------- */
+
+.field--checkbox {
+  gap: 0;
+}
+
+.field__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--touch-target);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.field__toggle:hover {
+  background: var(--color-surface-muted);
+}
+
+.field__checkbox {
+  flex: none;
+  width: var(--space-5);
+  height: var(--space-5);
+  margin: 0;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.field__checkbox:disabled {
+  cursor: not-allowed;
+}
+
+/* ---------- colour swatch ---------- */
+
+.field__color {
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-sunken);
+  cursor: pointer;
+}
+
+.field__color::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.field__color::-webkit-color-swatch {
+  border: var(--border-width) solid var(--color-text-muted);
+  border-radius: var(--radius-sm);
+}
+
+.field__color::-moz-color-swatch {
+  border: var(--border-width) solid var(--color-text-muted);
+  border-radius: var(--radius-sm);
+}
+
+.field__color:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* ---------- mobile ---------- */
+
+@media (max-width: 860px) {
+  .field__input,
+  .field__color,
+  .field__toggle {
+    min-height: var(--touch-target);
+  }
+
+  .field__checkbox {
+    width: var(--space-6);
+    height: var(--space-6);
+  }
+}

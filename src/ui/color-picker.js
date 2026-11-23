@@ -26,9 +26,8 @@ export function createColorPicker({ value = "#FFFFFFFF", onChange = () => {}, on
   preview.className = "color-picker__preview";
   const previewChip = document.createElement("span");
   previewChip.className = "color-picker__preview-chip";
-  const previewText = document.createElement("span");
-  previewText.className = "color-picker__preview-text";
-  preview.append(previewChip, previewText);
+  // the hex has its own field below: repeating it here wasted vertical space
+  preview.append(previewChip);
 
   const sv = document.createElement("div");
   sv.className = "color-picker__sv";
@@ -98,8 +97,7 @@ export function createColorPicker({ value = "#FFFFFFFF", onChange = () => {}, on
     hexInput.value = hex;
     // the chip carries the colour; the hex sits beside it in normal text colour,
     // so white on white can never happen
-    previewChip.style.background = hex;
-    previewText.textContent = hex;
+    previewChip.style.backgroundColor = hex;
     sv.style.setProperty("--picker-hue", `hsl(${hsv.h} 100% 50%)`);
     svHandle.style.left = `${hsv.s * 100}%`;
     svHandle.style.top = `${(1 - hsv.v) * 100}%`;

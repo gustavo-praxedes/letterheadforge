@@ -65,6 +65,17 @@ export const strings = {
         bottom: "Recuo inferior da pauta",
         left: "Recuo esquerdo da pauta",
       },
+      watermarkEnabled: "Mostrar marca d'água",
+      watermarkKind: "Tipo de marca d'água",
+      watermarkText: "Texto da marca d'água",
+      watermarkFont: "Fonte da marca d'água",
+      watermarkSize: "Corpo da marca d'água",
+      watermarkWeight: "Peso da marca d'água",
+      watermarkItalic: "Itálico da marca d'água",
+      watermarkColor: "Cor da marca d'água",
+      watermarkImage: "Imagem da marca d'água",
+      watermarkOpacity: "Opacidade da marca d'água",
+      watermarkRotation: "Rotação da marca d'água",
     },
     enums: {
       size: { A4: "A4", A5: "A5", A6: "A6" },
@@ -84,6 +95,7 @@ export const strings = {
         dashdot: "Traço e ponto",
       },
       rulingMode: { spacing: "Por passo", count: "Por quantidade" },
+      watermarkKind: { text: "Texto", image: "Imagem" },
       alignment: { left: "Esquerda", center: "Centralizado", right: "Direita", justify: "Justificado" },
     },
     help: {
@@ -94,10 +106,15 @@ export const strings = {
       rulingStyle: "Não se aplica à pauta de pontos.",
       rulingAxis: "Na pauta de linhas só o eixo vertical é usado.",
       rulingInsets: "O recuo afasta a pauta da moldura ou da margem.",
+      watermarkText: "A marca d'água é repetida em todas as páginas, no fundo da folha.",
+      watermarkSize: "De {min} a {max} pt.",
+      watermarkOpacity: "Exibida em porcentagem; fica gravada como fração de 0 a 1.",
+      watermarkImage: "Importe uma imagem para usar a marca d'água de imagem.",
     },
     messages: {
       clamped: "Valor ajustado para {value} {unit}.",
       invalid: "Digite um número válido.",
+      watermarkNoImage: "Nenhuma imagem importada para a marca d'água.",
     },
   },
   preview: {
@@ -183,6 +200,8 @@ export const strings = {
   units: {
     millimetre: "mm",
     point: "pt",
+    percentage: "%",
+    degree: "°",
   },
   warnings: {
     title: "Avisos",
@@ -190,6 +209,7 @@ export const strings = {
       "margin.belowHomePrint": "Margem menor que {limit} mm pode ser cortada pela impressora.",
       "cutmarks.margin.zero": "Sem marca de corte no lado com margem zero.",
       "ruling.areaTooSmall": "A área da pauta é menor que o mínimo e não foi gerada.",
+      "watermark.imageMissing": "Nenhuma imagem importada para a marca d'água.",
       "image.tooLarge": "O arquivo passa de {maxBytes} MB e foi rejeitado.",
       "image.dimensions": "O lado maior passa de {maxSidePx} px. Reamostre a imagem.",
       "image.limitCount": "Máximo de {max} imagens por preset.",

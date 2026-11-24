@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.retry.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - name: Assemble static site
@@ -42,9 +42,11 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
-      # deploy-pages lists the run's artifacts right after the upload finishes and
-      # the API sometimes lags by a second or two, answering "Found 0 artifact(s)"
-      # for an artifact that uploaded fine. Wait until it is visible.
+
+      # deploy-pages asks the Pages service for the run's `github-pages` artifact
+      # and the service can still answer "Found 0 artifact(s)" for a second or two
+      # after the upload succeeded. Wait until our own API sees it, give the Pages
+      # side a moment to catch up, and retry the deploy once if it still misses.
       - name: Wait for the artifact to appear
         env:
           GH_TOKEN: ${{ github.token }}
@@ -52,13 +54,30 @@ jobs:
           for attempt in $(seq 1 24); do
             count=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" \
               --jq '[.artifacts[] | select(.name == "github-pages")] | length')
-            if [ "$count" -gt 0 ]; then
+            if [ "${count:-0}" -gt 0 ]; then
               echo "artefato github-pages visível (tentativa $attempt)"
+              sleep 15
               exit 0
             fi
             sleep 5
           done
           echo "::error::o artefato github-pages não ficou visível em 2 minutos"
           exit 1
+
       - id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Give the Pages service another moment
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 30
+
+      - id: retry
+        if: steps.deployment.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+
+      - name: Fail when both attempts missed
+        if: steps.deployment.outcome == 'failure' && steps.retry.outcome == 'failure'
+        run: |
+          echo "::error::a publicação no Pages falhou duas vezes"
+          exit 1

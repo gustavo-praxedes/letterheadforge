@@ -255,3 +255,53 @@ export function updateTextStyle(preset, id, style = {}) {
 
   return { ok: true, preset: next, clamped };
 }
+
+/**
+ * Position, size, rotation and opacity of any object (text or image). Used by the
+ * number fields of the objects panel; the pointer drag uses the same mm model.
+ */
+export function updateObjectBox(preset, id, patch = {}) {
+  const objects = objectList(preset);
+  if (!objects.some((object) => object?.id === id)) return { ok: false, code: "objects.notFound" };
+
+  const next = clonePreset(preset);
+  const target = next.objects.find((object) => object.id === id);
+  const minSide = 5;
+  let clamped = false;
+
+  for (const key of ["x", "y"]) {
+    if (typeof patch[key] === "number" && Number.isFinite(patch[key])) {
+      target[key] = Math.round(patch[key] * 10) / 10;
+    }
+  }
+  const before = { w: target.w, h: target.h };
+  for (const key of ["w", "h"]) {
+    if (typeof patch[key] === "number" && Number.isFinite(patch[key])) {
+      const value = Math.min(Math.max(patch[key], minSide), 2000);
+      clamped = clamped || value !== patch[key];
+      target[key] = Math.round(value * 10) / 10;
+    }
+  }
+  // Aspect lock only follows a single-axis edit, so typing both values is honoured.
+  const wantsW = typeof patch.w === "number" && Number.isFinite(patch.w);
+  const wantsH = typeof patch.h === "number" && Number.isFinite(patch.h);
+  if (target.aspectLocked !== false && wantsW !== wantsH && before.w > 0 && before.h > 0) {
+    if (wantsW) target.h = Math.round(((target.w * before.h) / before.w) * 10) / 10;
+    else target.w = Math.round(((target.h * before.w) / before.h) * 10) / 10;
+  }
+  if (typeof patch.rotation === "number" && Number.isFinite(patch.rotation)) {
+    const value = Math.min(Math.max(patch.rotation, -180), 180);
+    clamped = clamped || value !== patch.rotation;
+    target.rotation = Math.round(value * 10) / 10;
+  }
+  if (typeof patch.opacity === "number" && Number.isFinite(patch.opacity)) {
+    const value = Math.min(Math.max(patch.opacity, 0), 1);
+    clamped = clamped || value !== patch.opacity;
+    target.opacity = Math.round(value * 100) / 100;
+  }
+  if (typeof patch.aspectLocked === "boolean") {
+    target.aspectLocked = patch.aspectLocked;
+  }
+
+  return { ok: true, preset: next, clamped };
+}

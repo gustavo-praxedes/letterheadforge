@@ -163,7 +163,7 @@ export const strings = {
     },
   },
   objects: {
-    empty: "Selecione uma caixa de texto na lista de camadas para editar o conteúdo.",
+    empty: "Selecione um objeto na lista de camadas para editar.",
     names: {
       text: "Texto {index}",
       image: "Imagem {index}",
@@ -184,6 +184,13 @@ export const strings = {
       italic: "Itálico",
       color: "Cor do texto",
       align: "Alinhamento",
+      x: "Posição X",
+      y: "Posição Y",
+      w: "Largura",
+      h: "Altura",
+      rotation: "Rotação",
+      opacity: "Opacidade",
+      aspectLocked: "Manter proporção",
     },
     actions: {
       addText: "Nova caixa de texto",
@@ -201,6 +208,8 @@ export const strings = {
     help: {
       content: "A quebra de linha acontece por palavras; o excesso é cortado na caixa.",
       size: "De {min} a {max} pt.",
+      geometry: "Medidas em milímetros; a rotação gira em torno do centro.",
+      opacity: "De 0% (invisível) a 100%.",
     },
   },
   picker: {

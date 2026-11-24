@@ -24,6 +24,7 @@ import {
   addTextBox,
   canAddImage,
   canAddTextBox,
+  updateObjectBox,
   updateTextContent,
   updateTextStyle,
 } from "./objects.js";
@@ -564,6 +565,12 @@ const OBJECT_FIELD_IDS = {
   align: "objects.text.align",
 };
 
+function selectedObject(preset, selectedId) {
+  if (selectedId === null || selectedId === undefined) return null;
+  const objects = Array.isArray(preset?.objects) ? preset.objects : [];
+  return objects.find((object) => object?.id === selectedId) ?? null;
+}
+
 function selectedTextObject(preset, selectedId) {
   if (selectedId === null || selectedId === undefined) return null;
   const objects = Array.isArray(preset?.objects) ? preset.objects : [];
@@ -635,8 +642,68 @@ export function objectsSection(preset, { selectedId = null, fonts = [] } = {}) {
     actionField("objects.addImage", strings.objects.actions.addImage, canAddImage(preset)),
   ];
 
-  const object = selectedTextObject(preset, selectedId);
-  if (!object) return [...actions, { id: "objects.empty", type: "hint", text: strings.objects.empty }];
+  const selected = selectedObject(preset, selectedId);
+  if (!selected) return [...actions, { id: "objects.empty", type: "hint", text: strings.objects.empty }];
+
+  if (selected.type !== "text") {
+    // An image has no text controls: what it needs is geometry. Without these
+    // fields the only way to size it was the mouse.
+    const boxField = (key, label, { min, max, step = 1, unit, help = null, parse = Number }) => ({
+      id: `objects.image.${key}`,
+      type: "number",
+      label,
+      value: selected[key],
+      min,
+      max,
+      step,
+      unit,
+      help,
+      warning: null,
+      disabled: false,
+      kind: "box",
+      styleKey: key,
+      parse,
+    });
+
+    return [
+      ...actions,
+      boxField("x", strings.objects.fields.x, { min: -500, max: 1000, unit: strings.units.millimetre, help: strings.objects.help.geometry }),
+      boxField("y", strings.objects.fields.y, { min: -500, max: 1000, unit: strings.units.millimetre }),
+      boxField("w", strings.objects.fields.w, { min: 5, max: 2000, unit: strings.units.millimetre }),
+      boxField("h", strings.objects.fields.h, { min: 5, max: 2000, unit: strings.units.millimetre }),
+      boxField("rotation", strings.objects.fields.rotation, { min: -180, max: 180, unit: strings.units.degree }),
+      {
+        id: "objects.image.opacity",
+        type: "number",
+        label: strings.objects.fields.opacity,
+        value: Math.round((selected.opacity ?? 1) * 100),
+        min: 0,
+        max: 100,
+        step: 1,
+        unit: strings.units.percentage,
+        help: strings.objects.help.opacity,
+        warning: null,
+        disabled: false,
+        kind: "box",
+        styleKey: "opacity",
+        // opacity is stored 0..1 and shown as a percentage
+        toPatch: (percent) => ({ opacity: percent / 100 }),
+        parse: Number,
+      },
+      {
+        id: "objects.image.aspectLocked",
+        type: "checkbox",
+        label: strings.objects.fields.aspectLocked,
+        value: selected.aspectLocked !== false,
+        help: null,
+        disabled: false,
+        kind: "box",
+        styleKey: "aspectLocked",
+      },
+    ];
+  }
+
+  const object = selected;
 
   const sizeHelp = fillMessage(strings.objects.help.size, {
     min: limits.textSizePt.min,
@@ -1059,6 +1126,9 @@ function buildField(field, store, { commit: commitOverride = null } = {}) {
   let lastValidValue = field.value;
 
   if (field.type === "number") {
+    // Never rewrite the input while the person is typing. Typing "2" into a field
+    // whose minimum is 4 used to be replaced by "4" on the spot, so the next "4"
+    // produced 44 instead of 24: the number on screen was never the one pressed.
     control.addEventListener("input", () => {
       const parsed = parseNumber(control.value);
       if (Number.isNaN(parsed)) {
@@ -1068,15 +1138,23 @@ function buildField(field, store, { commit: commitOverride = null } = {}) {
       }
       const next = clamp(parsed, field.min, field.max);
       const clamped = next !== parsed;
-      lastValidValue = next;
       pendingWarning = clamped
         ? fillMessage(strings.panels.messages.clamped, { value: formatNumber(next), unit: field.unit ?? "" })
         : null;
       showWarning(pendingWarning);
-      if (clamped) control.value = formatNumber(next);
+      // An out-of-range draft stays on screen until blur: committing it would move
+      // the object to a value the person did not type yet.
+      if (clamped) return;
+      lastValidValue = next;
       commit(next);
     });
     control.addEventListener("blur", () => {
+      const parsed = parseNumber(control.value);
+      const next = Number.isNaN(parsed) ? lastValidValue : clamp(parsed, field.min, field.max);
+      if (next !== lastValidValue) {
+        lastValidValue = next;
+        commit(next);
+      }
       control.value = formatNumber(lastValidValue);
       pendingWarning = null;
       showWarning(presetWarning);
@@ -1223,6 +1301,9 @@ function objectsSectionNode(store, options = {}) {
   let mounted = [];
   let signature = null;
 
+  const patchOf = (descriptor, value) =>
+    typeof descriptor.toPatch === "function" ? descriptor.toPatch(value) : { [descriptor.styleKey]: value };
+
   const commitFor = (descriptor) => (raw) => {
     const value = typeof descriptor.parse === "function" ? descriptor.parse(raw) : raw;
     const objectId = descriptor.target;
@@ -1230,7 +1311,9 @@ function objectsSectionNode(store, options = {}) {
       const result =
         descriptor.kind === "content"
           ? updateTextContent(draft, objectId, value)
-          : updateTextStyle(draft, objectId, { [descriptor.styleKey]: value });
+          : descriptor.kind === "box"
+            ? updateObjectBox(draft, objectId, patchOf(descriptor, value))
+            : updateTextStyle(draft, objectId, { [descriptor.styleKey]: value });
       if (!result.ok) return;
       Object.assign(draft, result.preset);
     }, { tag: descriptor.id, label: descriptor.label });

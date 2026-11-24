@@ -160,6 +160,42 @@ const handles = await page.evaluate(
 );
 report.push({ prova: "alças de seleção desenhadas", alças: handles, passou: handles === 9 });
 
+/* ---------- 3a. digitar um número entrega o número digitado ---------- */
+{
+  const id = "#panel-field-objects-text-sizePt";
+  const ler = async () => ({
+    campo: await page.evaluate((sel) => document.querySelector(sel)?.value ?? null, id),
+    modelo: await page.evaluate(async () => {
+      const mod = await import("./src/main.js");
+      return mod.store.getPreset().objects[0]?.sizePt ?? null;
+    }),
+  });
+  await page.click(id, { clickCount: 3 });
+  for (const tecla of ["2", "4"]) {
+    await page.keyboard.press(tecla);
+    await page.waitForTimeout(180);
+  }
+  await page.waitForTimeout(300);
+  const typed = await ler();
+
+  // below the minimum: the draft stays on screen and only blur clamps it
+  await page.click(id, { clickCount: 3 });
+  await page.keyboard.press("2");
+  await page.waitForTimeout(250);
+  const draft = await ler();
+  await page.keyboard.press("Tab");
+  await page.waitForTimeout(350);
+  const afterBlur = await ler();
+
+  report.push({
+    prova: "campo numérico aceita o número digitado",
+    digitou24: typed,
+    rascunhoForaDaFaixa: draft,
+    depoisDoBlur: afterBlur,
+    passou: typed.campo === "24" && typed.modelo === 24 && draft.campo === "2" && afterBlur.campo === "4" && afterBlur.modelo === 4,
+  });
+}
+
 /* ---------- 3b. imagem: importar, arrastar e redimensionar ---------- */
 {
   const png = join("temp", "verify-ui-image.png");
@@ -167,6 +203,25 @@ report.push({ prova: "alças de seleção desenhadas", alças: handles, passou: 
   page.once("filechooser", (chooser) => chooser.setFiles(png));
   await page.click("#panel-field-objects-addImage");
   await page.waitForTimeout(2000);
+
+  const imageFields = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-field^="objects.image."]')].map((node) => node.dataset.field),
+  );
+
+  // the width field must deliver what was typed, and the aspect lock follows it
+  const largura = "#panel-field-objects-image-w";
+  await page.click(largura, { clickCount: 3 });
+  for (const tecla of ["6", "0"]) {
+    await page.keyboard.press(tecla);
+    await page.waitForTimeout(180);
+  }
+  await page.waitForTimeout(350);
+  const typedWidth = await page.evaluate(async () => {
+    const mod = await import("./src/main.js");
+    const preset = mod.store.getPreset();
+    const last = preset.objects[preset.objects.length - 1];
+    return { campo: document.querySelector("#panel-field-objects-image-w").value, w: last.w, h: last.h };
+  });
 
   const withImage = await preset();
   const image = withImage.objects.find((object) => object.id !== dragged.id);
@@ -188,12 +243,22 @@ report.push({ prova: "alças de seleção desenhadas", alças: handles, passou: 
 
     report.push({
       prova: "imagem: arrastar e redimensionar",
+      camposDeGeometria: imageFields,
+      larguraDigitada: typedWidth,
       importada: inPreview,
       de: { x: image.x, y: image.y },
       para: { x: moved.x, y: moved.y },
       tamanhoFinal: { w: smaller.w, h: smaller.h },
       desvioMm: { x: Number(dx.toFixed(2)), y: Number(dy.toFixed(2)), w: Number(dw.toFixed(2)), h: Number(dh.toFixed(2)) },
-      passou: inPreview === 1 && dx <= TOLERANCE_MM && dy <= TOLERANCE_MM && dw <= TOLERANCE_MM && dh <= TOLERANCE_MM,
+      passou:
+        inPreview === 1 &&
+        imageFields.includes("objects.image.w") &&
+        typedWidth.campo === "60" &&
+        typedWidth.w === 60 &&
+        dx <= TOLERANCE_MM &&
+        dy <= TOLERANCE_MM &&
+        dw <= TOLERANCE_MM &&
+        dh <= TOLERANCE_MM,
     });
   } else {
     report.push({ prova: "imagem: arrastar e redimensionar", importada: inPreview, passou: false, motivo: "objeto não criado" });

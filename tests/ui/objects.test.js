@@ -12,6 +12,7 @@ import {
   describeObject,
   imageCount,
   textBoxCount,
+  updateObjectBox,
   updateTextContent,
   updateTextStyle,
   validateImageFile,
@@ -255,4 +256,50 @@ test("describeObject labels the layer with its name, type and excerpt", () => {
 
   assert.equal(describeObject(null), "");
   assert.equal(describeObject(undefined), "");
+});
+
+/* ---------------- geometry of an object (panel number fields) ------------- */
+
+function presetWithImage() {
+  const preset = defaultPreset();
+  preset.objects = [{ ...createImageObject({ x: 48, y: 110.5, w: 120, h: 80 }), imageId: "img-1" }];
+  return preset;
+}
+
+test("updateObjectBox moves and resizes an object", () => {
+  const preset = presetWithImage();
+  const id = preset.objects[0].id;
+  const result = updateObjectBox(preset, id, { x: 10, y: 20, w: 60, h: 40 });
+  assert.equal(result.ok, true);
+  const [object] = result.preset.objects;
+  assert.deepEqual({ x: object.x, y: object.y, w: object.w, h: object.h }, { x: 10, y: 20, w: 60, h: 40 });
+  // the original preset is untouched
+  assert.equal(preset.objects[0].w, 120);
+});
+
+test("updateObjectBox clamps size, rotation and opacity", () => {
+  const preset = presetWithImage();
+  const id = preset.objects[0].id;
+  const small = updateObjectBox(preset, id, { w: 1 });
+  assert.equal(small.preset.objects[0].w, 5);
+  const spin = updateObjectBox(preset, id, { rotation: 400 });
+  assert.equal(spin.preset.objects[0].rotation, 180);
+  const dark = updateObjectBox(preset, id, { opacity: 2 });
+  assert.equal(dark.preset.objects[0].opacity, 1);
+});
+
+test("a single-axis edit follows the aspect lock", () => {
+  const preset = presetWithImage();
+  const id = preset.objects[0].id;
+  const half = updateObjectBox(preset, id, { w: 60 });
+  assert.equal(half.preset.objects[0].w, 60);
+  assert.equal(half.preset.objects[0].h, 40); // 120x80 halved
+  const free = updateObjectBox({ ...preset, objects: [{ ...preset.objects[0], aspectLocked: false }] }, id, { w: 60 });
+  assert.equal(free.preset.objects[0].h, 80);
+  const both = updateObjectBox(preset, id, { w: 60, h: 30 });
+  assert.equal(both.preset.objects[0].h, 30);
+});
+
+test("updateObjectBox refuses an unknown object", () => {
+  assert.deepEqual(updateObjectBox(presetWithImage(), "nope", { x: 1 }), { ok: false, code: "objects.notFound" });
 });

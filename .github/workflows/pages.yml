@@ -42,5 +42,23 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+      # deploy-pages lists the run's artifacts right after the upload finishes and
+      # the API sometimes lags by a second or two, answering "Found 0 artifact(s)"
+      # for an artifact that uploaded fine. Wait until it is visible.
+      - name: Wait for the artifact to appear
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for attempt in $(seq 1 24); do
+            count=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" \
+              --jq '[.artifacts[] | select(.name == "github-pages")] | length')
+            if [ "$count" -gt 0 ]; then
+              echo "artefato github-pages visível (tentativa $attempt)"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::o artefato github-pages não ficou visível em 2 minutos"
+          exit 1
       - id: deployment
         uses: actions/deploy-pages@v4
